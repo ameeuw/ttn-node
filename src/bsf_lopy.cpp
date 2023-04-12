@@ -1,13 +1,12 @@
-
-#ifdef BOARD_TTGO
-#include "bsf_ttgo_lora32_v2.h"
+#ifdef BOARD_LOPY
+#include "bsf_lopy.h"
 
 // Pin mappings for LoRa tranceiver
 const lmic_pinmap lmic_pins = {
-    .nss = 18,
+    .nss = 17,
     .rxtx = LMIC_UNUSED_PIN,
     .rst = LMIC_UNUSED_PIN,
-    .dio = {/*dio0*/ 26, /*dio1*/ 33, /*dio2*/ LMIC_UNUSED_PIN}
+    .dio = {/*dio0*/ 23, /*dio1*/ 23, /*dio2*/ 23}
 #ifdef MCCI_LMIC
     ,
     .rxtx_rx_active = 0,
@@ -21,7 +20,7 @@ HardwareSerial &serial = Serial;
 #endif
 
 #ifdef USE_LED
-EasyLed led(LED_BUILTIN, EasyLed::ActiveLevel::Low);
+#error "Invalid option: USE_LED. Onboard WS2812 RGB LED is currently not supported."
 #endif
 
 #ifdef USE_DISPLAY
@@ -42,7 +41,11 @@ bool boardInit(InitType initType)
     {
     case InitType::Hardware:
         // Note: Serial port and display are not yet initialized and cannot be used use here.
-        // No actions required for this board.
+
+        // Initialize standard SPI object with non-standard SPI pins for LoRa module.
+        // These pins will be remembered and will not change if any library
+        // later calls SPI.begin() without parameters.
+        SPI.begin(5, 19, 27, 18);
         break;
 
     case InitType::PostInitSerial:
@@ -52,4 +55,5 @@ bool boardInit(InitType initType)
     }
     return success;
 }
+
 #endif

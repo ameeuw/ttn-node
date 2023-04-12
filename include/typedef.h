@@ -1,7 +1,7 @@
 #ifndef typedef_h
 #define typedef_h
 
-#define DEV2
+#define DEV3
 
 #include "../keyfiles/lorawan-keys.h"
 

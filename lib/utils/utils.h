@@ -1,6 +1,8 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
+#include "Arduino.h"
+
 #ifdef USE_DISPLAY
 #include <Wire.h>
 #include "U8x8lib.h"

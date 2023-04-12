@@ -667,7 +667,7 @@ void sendStruct(String payload, uint16_t counterValue)
     memcpy(bs, &tracerPayload, sizeof(tracerPayload));
     uint8_t fPort = 12;
 #else
-#ifdef DEV2
+#if defined(DEV2) || defined(DEV3)
     struct meter
     {
         float batteryVoltage;
@@ -891,6 +891,10 @@ void setupLmic()
 #else
 #ifdef DEV2
     WiFi.softAP("TTGO_v2_0002");
+#else
+#ifdef DEV3
+    WiFi.softAP("LOPY_0001");
+#endif
 #endif
 #endif
     //     WiFi.begin(ssid, password);
