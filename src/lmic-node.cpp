@@ -619,78 +619,77 @@ void processWork(ostime_t doWorkJobTimeStamp, uint16_t counterValue)
     }
 }
 
-void sendStruct(String payload, uint16_t counterValue)
+void sendCounterValue(uint16_t counterValue)
 {
-    DynamicJsonDocument doc(1024);
-    deserializeJson(doc, payload);
-#ifdef DEV1
-    struct tracer
-    {
-        float batteryTemperature;
-        float batterySoc;
-        float batteryVoltage;
-        float batteryCurrent;
-        float pvVoltage;
-        float pvCurrent;
-        float pvPower;
-        float loadVoltage;
-        float loadCurrent;
-        float loadPower;
-        float consumptionDay;
-        float consumptionSum;
-        float productionSum;
-        float batteryMaxVoltage;
-        uint16_t counter;
-        uint32_t t;
+    // Prepare uplink payload.
+    uint8_t fPort = 10;
+    payloadBuffer[0] = counterValue >> 8;
+    payloadBuffer[1] = counterValue & 0xFF;
+    uint8_t payloadLength = 2;
+    scheduleUplink(fPort, payloadBuffer, payloadLength);
+}
+
+meter parseMeterStruct(JsonObject doc, uint16_t counterValue)
+{
+    meter meterPayload = {
+        ((float)doc["ANALOG"]["Range"]) / 1000,
+        doc["meter"]["power"],
+        doc["meter"]["consumption"],
+        millis(),
+        counterValue,
     };
-    tracer tracerPayload;
-    tracerPayload.t = millis();
-    tracerPayload.counter = counterValue;
-    tracerPayload.batteryTemperature = doc["StatusSNS"]["TRACER"]["batteryTemperature"];
-    tracerPayload.batterySoc = doc["StatusSNS"]["TRACER"]["batterySoc"];
-    tracerPayload.batteryVoltage = doc["StatusSNS"]["TRACER"]["batteryVoltage"];
-    tracerPayload.batteryCurrent = doc["StatusSNS"]["TRACER"]["batteryCurrent"];
-    tracerPayload.pvVoltage = doc["StatusSNS"]["TRACER"]["pvVoltage"];
-    tracerPayload.pvCurrent = doc["StatusSNS"]["TRACER"]["pvCurrent"];
-    tracerPayload.pvPower = doc["StatusSNS"]["TRACER"]["pvPower"];
-    tracerPayload.loadVoltage = doc["StatusSNS"]["TRACER"]["loadVoltage"];
-    tracerPayload.loadCurrent = doc["StatusSNS"]["TRACER"]["loadCurrent"];
-    tracerPayload.loadPower = doc["StatusSNS"]["TRACER"]["loadPower"];
-    tracerPayload.consumptionDay = doc["StatusSNS"]["TRACER"]["consumptionDay"];
-    tracerPayload.consumptionSum = doc["StatusSNS"]["TRACER"]["consumptionSum"];
-    tracerPayload.productionSum = doc["StatusSNS"]["TRACER"]["productionSum"];
-    tracerPayload.batteryMaxVoltage = doc["StatusSNS"]["TRACER"]["batteryMaxVoltage"];
-    Serial.print("Sending telemetry at t=");
-    Serial.print(tracerPayload.t);
-    Serial.println(" ms");
-    uint8_t bs[sizeof(tracerPayload)];
-    memcpy(bs, &tracerPayload, sizeof(tracerPayload));
-    uint8_t fPort = 12;
-#else
-#if defined(DEV2) || defined(DEV3)
-    struct meter
-    {
-        float batteryVoltage;
-        float loadPower;
-        float consumptionSum;
-        uint16_t counter;
-        uint32_t t;
+    return meterPayload;
+}
+
+tracer parseTracerStruct(JsonObject doc, uint16_t counterValue)
+{
+    tracer tracerPayload = {
+        doc["TRACER"]["batteryTemperature"],
+        doc["TRACER"]["batterySoc"],
+        doc["TRACER"]["batteryVoltage"],
+        doc["TRACER"]["batteryCurrent"],
+        doc["TRACER"]["pvVoltage"],
+        doc["TRACER"]["pvCurrent"],
+        doc["TRACER"]["pvPower"],
+        doc["TRACER"]["loadVoltage"],
+        doc["TRACER"]["loadCurrent"],
+        doc["TRACER"]["loadPower"],
+        doc["TRACER"]["consumptionDay"],
+        doc["TRACER"]["consumptionSum"],
+        doc["TRACER"]["productionSum"],
+        doc["TRACER"]["batteryMaxVoltage"],
+        counterValue,
+        millis(),
     };
-    meter meterPayload;
-    meterPayload.t = millis();
-    meterPayload.counter = counterValue;
-    meterPayload.batteryVoltage = ((float)doc["StatusSNS"]["ANALOG"]["Range"]) / 1000;
-    meterPayload.loadPower = doc["StatusSNS"]["meter"]["power"];
-    meterPayload.consumptionSum = doc["StatusSNS"]["meter"]["consumption"];
-    Serial.print("Sending meter at t=");
-    Serial.print(meterPayload.t);
-    Serial.println(" ms");
-    uint8_t bs[sizeof(meterPayload)];
-    memcpy(bs, &meterPayload, sizeof(meterPayload));
-    uint8_t fPort = 13;
-#endif
-#endif
-    scheduleUplink(fPort, bs, sizeof(bs));
+    return tracerPayload;
+}
+
+String fetchPayload(String serverName)
+{
+    HTTPClient http;
+    String serverPath = serverName + "/cm?cmnd=status%2010";
+    // Your Domain name with URL path or IP address with path
+    http.begin(serverPath.c_str());
+
+    // Send HTTP GET request
+    int httpResponseCode = http.GET();
+    String payload = "";
+    if (httpResponseCode > 0)
+    {
+        Serial.print("HTTP Response code: ");
+        Serial.println(httpResponseCode);
+        payload = http.getString();
+    }
+    else
+    {
+        Serial.print("Error code: ");
+        Serial.println(httpResponseCode);
+    }
+
+    // Free resources
+    http.end();
+
+    return payload;
 }
 
 void collectAndSend(ostime_t doWorkJobTimeStamp, uint16_t counterValue)
@@ -746,70 +745,63 @@ void collectAndSend(ostime_t doWorkJobTimeStamp, uint16_t counterValue)
             esp_wifi_ap_get_sta_list(&wifi_sta_list);
             tcpip_adapter_get_sta_list(&wifi_sta_list, &adapter_sta_list);
 
-            for (int i = 0; i < adapter_sta_list.num; i++)
+            // Iterate of all stations inside the adapter_sta_list
+            for (esp_netif_sta_info_t station : adapter_sta_list.sta)
             {
-
-                tcpip_adapter_sta_info_t station = adapter_sta_list.sta[i];
-
-                Serial.print("station nr ");
-                Serial.println(i);
-
                 Serial.print("MAC: ");
-
                 for (int i = 0; i < 6; i++)
                 {
-
                     Serial.printf("%02X", station.mac[i]);
                     if (i < 5)
                         Serial.print(":");
                 }
-
                 String ip = ip4addr_ntoa((ip4_addr_t *)&(station.ip));
                 Serial.print("\nIP: ");
                 Serial.println(ip);
                 serverName = "http://" + ip;
                 Serial.print("\nServer: ");
                 Serial.println(serverName);
-
-                String payload = "";
                 if (serverName != "")
                 {
-                    HTTPClient http;
+                    String payload = fetchPayload(serverName);
 
-                    String serverPath = serverName + "/cm?cmnd=status%2010";
-                    // Your Domain name with URL path or IP address with path
-                    http.begin(serverPath.c_str());
-
-                    // Send HTTP GET request
-                    int httpResponseCode = http.GET();
-
-                    if (httpResponseCode > 0)
+                    if (payload != "")
                     {
-                        Serial.print("HTTP Response code: ");
-                        Serial.println(httpResponseCode);
-                        payload = http.getString();
-                        Serial.println(payload);
+                        DynamicJsonDocument doc(1024);
+                        deserializeJson(doc, payload);
+                        const JsonObject status = doc["StatusSNS"];
+                        if (status.containsKey("TRACER"))
+                        {
+                            tracer tracerPayload = parseTracerStruct(status, counterValue);
+                            Serial.print("Sending telemetry at t=");
+                            Serial.print(tracerPayload.t);
+                            Serial.println(" ms");
+                            uint8_t fPort = 12;
+                            scheduleUplink(fPort, (uint8_t *)&tracerPayload, sizeof(tracerPayload));
+                        }
+                        else if (status.containsKey("meter"))
+                        {
+                            meter meterPayload = parseMeterStruct(status, counterValue);
+                            Serial.print("Sending telemetry at t=");
+                            Serial.print(meterPayload.t);
+                            Serial.println(" ms");
+                            uint8_t fPort = 13;
+                            scheduleUplink(fPort, (uint8_t *)&meterPayload, sizeof(meterPayload));
+                        }
+                        else
+                        {
+                            Serial.println("Cannot find compatible payload.");
+                            Serial.println("Supported structs are: 'tracer', 'meter'");
+                        }
                     }
                     else
                     {
-                        Serial.print("Error code: ");
-                        Serial.println(httpResponseCode);
+                        Serial.println("No payload");
                     }
-                    // Free resources
-                    http.end();
                 }
                 else
                 {
                     Serial.println("No client connected");
-                }
-
-                if (payload != "")
-                {
-                    sendStruct(payload, counterValue);
-                }
-                else
-                {
-                    Serial.println("No payload");
                 }
             }
         }
@@ -886,33 +878,16 @@ void setupLmic()
     //  ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀   ▀▀▀ ▀▀▀ ▀▀  ▀▀▀   ▀▀  ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀
 
     // Place code for initializing sensors etc. here.
-#ifdef DEV1
-    WiFi.softAP("MyESP32AP");
-#else
-#ifdef DEV2
+
+#if defined(DEV2)
     WiFi.softAP("TTGO_v2_0002");
-#else
-#ifdef DEV3
+#elif defined(DEV3)
     WiFi.softAP("LOPY_0001");
+#elif defined(DEV4)
+    WiFi.softAP("LOPY_0002");
+#else
+    WiFi.softAP("MyESP32AP");
 #endif
-#endif
-#endif
-    //     WiFi.begin(ssid, password);
-    //     Serial.println("Connecting");
-    //     while (WiFi.status() != WL_CONNECTED)
-    //     {
-    //         delay(500);
-    //         Serial.print(".");
-    //     }
-    //     Serial.println("");
-    //     Serial.print("Connected to WiFi network with IP Address: ");
-    //     Serial.println(WiFi.localIP());
-    // #ifdef USE_DISPLAY
-    //     // Following mesage shown only if failure was unrelated to I2C.
-    //     display.setCursor(COL_0, FRMCNTRS_ROW);
-    //     display.print(F("WiFi connected"));
-    //     display.print(WiFi.localIP());
-    // #endif
 
     resetCounter();
 
