@@ -761,7 +761,7 @@ void collectAndSend(ostime_t doWorkJobTimeStamp, uint16_t counterValue)
                 serverName = "http://" + ip;
                 Serial.print("\nServer: ");
                 Serial.println(serverName);
-                if (serverName != "")
+                if (serverName != "" && serverName != "http://0.0.0.0")
                 {
                     String payload = fetchPayload(serverName);
 
