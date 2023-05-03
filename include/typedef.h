@@ -30,6 +30,13 @@ struct meter
     uint16_t counter;
 };
 
+typedef struct qMessage
+{
+    uint8_t id;
+    uint8_t length;
+    char payload[50];
+} qMessage;
+
 #include "../keyfiles/lorawan-keys.h"
 
 #endif
