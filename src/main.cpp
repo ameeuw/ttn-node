@@ -1,6 +1,9 @@
 #include <include.h>
 
+PicoMQTT::Server mqtt;
+
 void lmicTask(void *);
+void mqttTask(void *);
 void handleMsgTask(void *);
 void sendMsgTask(void *);
 
@@ -14,9 +17,19 @@ void initTasks(void)
   xTaskCreatePinnedToCore(
       lmicTask,    /* Task function. */
       "LMIC Task", /* String with name of task. */
-      10000,       /* Stack size in words. */
+      30000,       /* Stack size in words. */
       NULL,        /* Parameter passed as input of the task */
       1,           /* Priority of the task. */
+      NULL,        /* Task handle. */
+      1            /* Pinned CPU core. */
+  );
+
+  xTaskCreatePinnedToCore(
+      mqttTask,    /* Task function. */
+      "MQTT Task", /* String with name of task. */
+      20000,       /* Stack size in words. */
+      NULL,        /* Parameter passed as input of the task */
+      2,           /* Priority of the task. */
       NULL,        /* Task handle. */
       1            /* Pinned CPU core. */
   );
@@ -42,10 +55,34 @@ void initTasks(void)
   );
 }
 
+void forwardMqttToQueue(const char *topic, const char *payload)
+{
+  Serial.printf("Received message in topic '%s': %s\n", topic, payload);
+  struct qMessage *pxMessage;
+
+  Serial.println("Forwarding message...");
+  txMessage.id = 127;
+  txMessage.length = strlen(topic);
+  for (uint8_t i = 0; i < txMessage.length; i++)
+  {
+    txMessage.payload[i] = topic[i];
+  }
+  pxMessage = &txMessage;
+  xQueueSend(xQueue, &pxMessage, (TickType_t)0);
+}
+
+void initMqtt()
+{
+  // Subscribe to a topic and attach a callback
+  mqtt.subscribe("tele/+/SENSOR", forwardMqttToQueue);
+  mqtt.begin();
+}
+
 void setup()
 {
   // put your setup code here, to run once:
   setupLmic();
+  initMqtt();
   initTasks();
 }
 
@@ -61,11 +98,21 @@ void lmicTask(void *parameter)
   }
 }
 
+void mqttTask(void *parameter)
+{
+  const TickType_t xDelay = 0 / portTICK_PERIOD_MS;
+  while (true)
+  {
+    mqtt.loop();
+    vTaskDelay(xDelay);
+  }
+}
+
 void sendMsgTask(void *parameter)
 {
   uint lastMsg = 0;
   uint8_t msgCounter = 0;
-  const TickType_t xDelay = 10000 / portTICK_PERIOD_MS;
+  const TickType_t xDelay = 60000 / portTICK_PERIOD_MS;
 
   while (true)
   {
@@ -117,13 +164,10 @@ void handleXQueueMessage(qMessage *rxMsg)
   Serial.print("length: ");
   Serial.println((uint8_t)rxMsg->length);
   Serial.print("payload: ");
-
-  String msg = String((uint8_t)rxMsg->id) + " : " + String(rxMsg->payload);
-  char buf[msg.length() + 1];
-
   for (uint8_t i = 0; i < (uint8_t)rxMsg->length; i++)
   {
     Serial.print(rxMsg->payload[i]);
   }
   Serial.println("");
+  Serial.println(String((uint8_t)rxMsg->id) + " : " + String(rxMsg->payload));
 }
