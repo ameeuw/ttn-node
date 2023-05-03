@@ -8,6 +8,7 @@
 */
 
 #include <Arduino.h>
+#include <PicoMQTT.h>
 
 #include "esp_wifi.h"
 #include <HTTPClient.h>
