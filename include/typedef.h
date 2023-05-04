@@ -37,6 +37,13 @@ typedef struct qMessage
     char payload[50];
 } qMessage;
 
+typedef struct linkMessage
+{
+    uint8_t fport;
+    uint8_t *data;
+    uint8_t length;
+} linkMessage;
+
 #include "../keyfiles/lorawan-keys.h"
 
 #endif
