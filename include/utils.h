@@ -1,7 +1,7 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
-#include "Arduino.h"
+#include "include.h"
 
 #ifdef USE_DISPLAY
 #include <Wire.h>
@@ -31,6 +31,19 @@
 #endif
 
 void displayTxSymbol(bool visible);
+void printSessionKeys(void);
+void printDownlinkInfo(void);
+void printFrameCounters(PrintTarget target = PrintTarget::All);
+void printEvent(ostime_t timestamp,
+                ev_t ev,
+                PrintTarget target = PrintTarget::All,
+                bool clearDisplayStatusRow = true);
+void printEvent(ostime_t timestamp,
+                const char *const message,
+                PrintTarget target = PrintTarget::All,
+                bool clearDisplayStatusRow = true,
+                bool eventLabel = false);
+void printHeader(void);
 void printChars(Print &printer, char ch, uint8_t count, bool linefeed = false);
 void printSpaces(Print &printer, uint8_t count, bool linefeed = false);
 void printHex(Print &printer, uint8_t *bytes, size_t length = 1, bool linefeed = false, char separator = 0);
