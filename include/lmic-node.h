@@ -49,6 +49,7 @@ void onLmicEvent(void *pUserData, ev_t ev);
 void setupLmic(void);
 int16_t getSnrTenfold(void);
 int16_t getRssi(int8_t snr);
+lmic_tx_error_t scheduleUplink(uint8_t fPort, uint8_t *data, uint8_t dataLength, bool confirmed);
 
 #ifndef DO_WORK_INTERVAL_SECONDS     // Should be set in platformio.ini
 #define DO_WORK_INTERVAL_SECONDS 300 // Default 5 minutes if not set

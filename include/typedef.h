@@ -30,6 +30,14 @@ struct meter
     uint16_t counter;
 };
 
+struct co2
+{
+    uint16_t co2;
+    uint16_t illuminance;
+    uint32_t t;
+    uint16_t counter;
+};
+
 typedef struct qMessage
 {
     uint8_t id;
@@ -43,6 +51,12 @@ typedef struct linkMessage
     uint8_t *data;
     uint8_t length;
 } linkMessage;
+
+typedef struct mqttMessage
+{
+    String topic;
+    String payload;
+} mqttMessage;
 
 #include "../keyfiles/lorawan-keys.h"
 

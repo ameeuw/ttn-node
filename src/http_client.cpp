@@ -139,3 +139,13 @@ tracer parseTracerStruct(JsonObject doc, uint16_t counterValue)
     };
     return tracerPayload;
 }
+
+co2 parseCo2Struct(JsonObject doc, uint16_t counterValue)
+{
+    return (co2){
+        doc["CO2"],
+        doc["ANALOG"]["Illuminance"],
+        millis(),
+        counterValue,
+    };
+}

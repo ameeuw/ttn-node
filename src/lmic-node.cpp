@@ -360,12 +360,18 @@ void processDownlink(ostime_t txCompleteTimestamp, uint8_t fPort, uint8_t *data,
     // To send the reset counter command to the node, send a downlink message
     // (e.g. from the TTN Console) with single byte value resetCmd on port cmdPort.
 
-    struct linkMessage *pxMessage;
-    downlinkMessage.fport = fPort;
-    downlinkMessage.length = dataLength;
-    downlinkMessage.data = data;
-    pxMessage = &downlinkMessage;
-    xQueueSend(downlinkQueue, &pxMessage, (TickType_t)0);
+    linkMessage *ptxdownlinkMessage = (linkMessage *)pvPortMalloc(sizeof(linkMessage));
+    if (ptxdownlinkMessage == NULL)
+    {
+        Serial.println(F("Failed to allocate heap memory."));
+    }
+    else
+    {
+        ptxdownlinkMessage->fport = fPort;
+        ptxdownlinkMessage->length = dataLength;
+        ptxdownlinkMessage->data = data;
+        xQueueSend(downlinkQueue, &ptxdownlinkMessage, (TickType_t)0);
+    }
 }
 
 //  █ █ █▀▀ █▀▀ █▀▄   █▀▀ █▀█ █▀▄ █▀▀   █▀▀ █▀█ █▀▄
