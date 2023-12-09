@@ -12,11 +12,27 @@ void sendMsgTask(void *);
 void doWorkTask(void *);
 void handleDownlinkMsgTask(void *parameter);
 void handleMqttMsgTask(void *parameter);
+void printStatusMsgTask(void *parameter);
 
+// Internal queue
 qMessage txMessage;
 QueueHandle_t xQueue = xQueueCreate(10, sizeof(struct qMessage *));
+
+// LoRaWAN queues
 extern QueueHandle_t downlinkQueue;
+linkMessage uplinklinkMessage;
+QueueHandle_t uplinkQueue = xQueueCreate(10, sizeof(struct linkMessage *));
+
+// MQTT queue
 QueueHandle_t mqttQueue = xQueueCreate(10, sizeof(struct mqttMessage *));
+
+TaskHandle_t LmicTask;
+TaskHandle_t MqttTask;
+TaskHandle_t HandleMsgTask;
+TaskHandle_t SendMsgTask;
+TaskHandle_t DoWorkTask;
+TaskHandle_t HandleDownlinkMsgTask;
+TaskHandle_t HandleMqttMsgTask;
 
 void initTasks(void)
 {
@@ -26,39 +42,39 @@ void initTasks(void)
       30000,       /* Stack size in words. */
       NULL,        /* Parameter passed as input of the task */
       1,           /* Priority of the task. */
-      NULL,        /* Task handle. */
+      &LmicTask,   /* Task handle. */
       1            /* Pinned CPU core. */
   );
 
   xTaskCreatePinnedToCore(
       mqttTask,    /* Task function. */
       "MQTT Task", /* String with name of task. */
-      20000,       /* Stack size in words. */
+      10000,       /* Stack size in words. */
       NULL,        /* Parameter passed as input of the task */
       1,           /* Priority of the task. */
-      NULL,        /* Task handle. */
-      0            /* Pinned CPU core. */
+      &MqttTask,   /* Task handle. */
+      1            /* Pinned CPU core. */
   );
 
-  xTaskCreatePinnedToCore(
-      handleMsgTask,         /* Task function. */
-      "Handle Message Task", /* String with name of task. */
-      10000,                 /* Stack size in words. */
-      NULL,                  /* Parameter passed as input of the task */
-      2,                     /* Priority of the task. */
-      NULL,                  /* Task handle. */
-      1                      /* Pinned CPU core. */
-  );
+  // xTaskCreatePinnedToCore(
+  //     handleMsgTask,         /* Task function. */
+  //     "Handle Message Task", /* String with name of task. */
+  //     10000,                 /* Stack size in words. */
+  //     NULL,                  /* Parameter passed as input of the task */
+  //     2,                     /* Priority of the task. */
+  //     &HandleMsgTask,        /* Task handle. */
+  //     1                      /* Pinned CPU core. */
+  // );
 
-  xTaskCreatePinnedToCore(
-      sendMsgTask,         /* Task function. */
-      "Send Message Task", /* String with name of task. */
-      10000,               /* Stack size in words. */
-      NULL,                /* Parameter passed as input of the task */
-      3,                   /* Priority of the task. */
-      NULL,                /* Task handle. */
-      1                    /* Pinned CPU core. */
-  );
+  // xTaskCreatePinnedToCore(
+  //     sendMsgTask,         /* Task function. */
+  //     "Send Message Task", /* String with name of task. */
+  //     10000,               /* Stack size in words. */
+  //     NULL,                /* Parameter passed as input of the task */
+  //     3,                   /* Priority of the task. */
+  //     &SendMsgTask,        /* Task handle. */
+  //     1                    /* Pinned CPU core. */
+  // );
 
   xTaskCreatePinnedToCore(
       doWorkTask,    /* Task function. */
@@ -66,7 +82,7 @@ void initTasks(void)
       10000,         /* Stack size in words. */
       NULL,          /* Parameter passed as input of the task */
       3,             /* Priority of the task. */
-      NULL,          /* Task handle. */
+      &DoWorkTask,   /* Task handle. */
       1              /* Pinned CPU core. */
   );
 
@@ -76,7 +92,7 @@ void initTasks(void)
       10000,                  /* Stack size in words. */
       NULL,                   /* Parameter passed as input of the task */
       2,                      /* Priority of the task. */
-      NULL,                   /* Task handle. */
+      &HandleDownlinkMsgTask, /* Task handle. */
       1                       /* Pinned CPU core. */
   );
 
@@ -86,8 +102,18 @@ void initTasks(void)
       10000,              /* Stack size in words. */
       NULL,               /* Parameter passed as input of the task */
       1,                  /* Priority of the task. */
-      NULL,               /* Task handle. */
+      &HandleMqttMsgTask, /* Task handle. */
       1                   /* Pinned CPU core. */
+  );
+
+  xTaskCreatePinnedToCore(
+      printStatusMsgTask,  /* Task function. */
+      "Print Status Task", /* String with name of task. */
+      10000,               /* Stack size in words. */
+      NULL,                /* Parameter passed as input of the task */
+      1,                   /* Priority of the task. */
+      NULL,                /* Task handle. */
+      1                    /* Pinned CPU core. */
   );
 }
 
@@ -100,11 +126,17 @@ void initMqtt()
   mqtt.begin();
 }
 
+mqttMessage mMessage;
+
 void forwardMqttToQueue(const char *topic, const char *payload)
 {
+  Serial.printf("Received message in topic '%s': %s\n", topic, payload);
   Serial.print("Allocating memory. Free heap: ");
   Serial.println(xPortGetFreeHeapSize());
-  mqttMessage *ptxMqttMessage = (mqttMessage *)pvPortMalloc(sizeof(mqttMessage));
+  // mqttMessage *ptxMqttMessage = (mqttMessage *)pvPortMalloc(sizeof(mqttMessage));
+
+  struct mqttMessage *ptxMqttMessage;
+  ptxMqttMessage = &mMessage;
   if (ptxMqttMessage == NULL)
   {
     Serial.println(F("Failed to allocate heap memory."));
@@ -113,8 +145,13 @@ void forwardMqttToQueue(const char *topic, const char *payload)
   else
   {
     Serial.println("Forwarding message");
+    // memcpy(&ptxMqttMessage->topic, topic, strlen(topic) + 1);
+    // memcpy(&ptxMqttMessage->payload, payload, strlen(payload) + 1);
     ptxMqttMessage->topic = topic;
     ptxMqttMessage->payload = payload;
+    Serial.print("Free heap: ");
+    Serial.println(xPortGetFreeHeapSize());
+    Serial.printf("topic: '%s'; payload: %s\n", ptxMqttMessage->topic.c_str(), ptxMqttMessage->payload);
     xQueueSend(mqttQueue, &ptxMqttMessage, (TickType_t)0);
   }
 }
@@ -127,6 +164,8 @@ void setup()
   WiFi.softAP("LOPY_0001");
 #elif defined(DEV4)
   WiFi.softAP("LOPY_0002");
+  if (!MDNS.begin("ludwig"))
+    Serial.println("Error setting up MDNS responder!");
 #else
   WiFi.softAP("MyESP32AP");
 #endif
@@ -135,8 +174,12 @@ void setup()
   {
     Serial.println("Couldn't find RTC");
     Serial.flush();
-    while (1)
-      delay(10);
+    // while (1)
+    //   delay(10);
+  }
+  else
+  {
+    Serial.println("RTC found");
   }
 
   if (!rtc.isrunning())
@@ -149,14 +192,21 @@ void setup()
     // January 21, 2014 at 3am you would call:
     // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
   }
+  else
+  {
+    Serial.println("RTC is running");
+  }
 
   // put your setup code here, to run once:
   setupLmic();
+  // serial.begin(115200);
   initMqtt();
   initTasks();
 }
 
-void loop() {}
+void loop()
+{
+}
 
 void lmicTask(void *parameter)
 {
@@ -196,33 +246,80 @@ void doWorkTask(void *parameter)
 {
   uint8_t count = 0;
   const TickType_t xDelay = 60000 / portTICK_PERIOD_MS;
+  struct linkMessage *prxuplinkMessage;
+
   while (true)
   {
-    Serial.printf("\ndoWorkTask running on core: %d\n", xPortGetCoreID());
-    if (count == 3)
-    {
-      if (LMIC.devaddr != 0 && (LMIC.opmode & OP_TXRXPEND))
-      {
-        co2 co2Payload = {
-            400,
-            123,
-            rtc.now().unixtime(),
-            getCounterValue()};
+    UBaseType_t uplinkMessagesWaiting = uxQueueMessagesWaiting(uplinkQueue);
+    Serial.printf("%d uplink(s) waiting...\n", uplinkMessagesWaiting);
 
-        uint8_t fPort = 14;
-        scheduleUplink(fPort, (uint8_t *)&co2Payload, sizeof(co2Payload), false);
-      }
-      else
+    if (joined)
+    {
+      Serial.printf("Working uplinkQueue.\n");
+
+      // Pend on new message in queue and forward it to the corresponding handler
+      if (xQueueReceive(uplinkQueue, &(prxuplinkMessage), portMAX_DELAY))
       {
-        Serial.println("Cannot schedule uplink... too much going on");
+        Serial.println("Got pending uplink message");
+        Serial.printf("fport: %d; length: %d\n", prxuplinkMessage->fport, prxuplinkMessage->length);
+
+        if (LMIC.devaddr != 0)
+        {
+          if (LMIC.opmode & OP_TXRXPEND)
+          {
+            Serial.println("Uplink not scheduled because TxRx pending");
+          }
+          else
+          {
+            scheduleUplink(prxuplinkMessage->fport, prxuplinkMessage->data, prxuplinkMessage->length, false);
+          }
+          count = 0;
+        }
+
+        vPortFree(prxuplinkMessage);
       }
-      count = 0;
     }
     else
     {
-      processWork(millis(), getCounterValue());
+      Serial.println("Not joined yet.");
     }
-    count++;
+
+    // Serial.printf("\ndoWorkTask running on core: %d\n", xPortGetCoreID());
+    // // if (count % 3 == 0)
+    // if (joined)
+    // {
+    //   if (true)
+    //   {
+    //     if (LMIC.devaddr != 0)
+    //     {
+    //       if (LMIC.opmode & OP_TXRXPEND)
+    //       {
+    //         Serial.println("Uplink not scheduled because TxRx pending");
+    //       }
+    //       else
+    //       {
+    //         co2 co2Payload = {
+    //             400,
+    //             123,
+    //             rtc.now().unixtime(),
+    //             getCounterValue()};
+
+    //         uint8_t fPort = 14;
+    //         scheduleUplink(fPort, (uint8_t *)&co2Payload, sizeof(co2Payload), false);
+    //       }
+    //       count = 0;
+    //     }
+    //   }
+    //   else
+    //   {
+    //     processWork(millis(), getCounterValue());
+    //   }
+    // }
+    // else
+    // {
+    //   Serial.println("Not joined yet.");
+    // }
+    // count++;
     vTaskDelay(xDelay);
   }
 }
@@ -311,6 +408,23 @@ void handleDownlinkMsgTask(void *parameter)
         Serial.print(prxdownlinkMessage->data[i]);
       }
 
+      String topic = "ludwig/downlink";
+
+      DynamicJsonDocument doc(1024);
+      doc["fport"] = prxdownlinkMessage->fport;
+      doc["length"] = prxdownlinkMessage->length;
+      JsonArray data = doc.createNestedArray("data");
+      for (uint8_t i = 0; i < (uint8_t)prxdownlinkMessage->length; i++)
+      {
+        data.add(prxdownlinkMessage->data[i]);
+      }
+      String message;
+      serializeJson(doc, message);
+      Serial.println(message);
+      mqtt.publish(topic, message);
+
+      Serial.printf("Publishing message in topic '%s': %s\n", topic.c_str(), message.c_str());
+
       if (prxdownlinkMessage->fport == cmdPort && prxdownlinkMessage->length == 1 && prxdownlinkMessage->data[0] == resetCmd)
       {
         serial.println("Reset cmd received.");
@@ -338,11 +452,89 @@ void handleMqttMsgTask(void *parameter)
     {
       Serial.println("handleMqttMsgTask running on core: " + xPortGetCoreID());
       Serial.println("Received mqttQueue");
-      String nodeName = mqtt.get_topic_element(prxMqttMessage->topic.c_str(), 1);
-      Serial.printf("topic: '%s'; payload: %s; nodeName: %s\n", prxMqttMessage->topic, prxMqttMessage->payload, nodeName);
-      vPortFree(prxMqttMessage);
+
+      // vPortFree(prxMqttMessage);
+
+      DynamicJsonDocument doc(1024);
+      deserializeJson(doc, prxMqttMessage->payload);
+      const JsonObject status = doc["StatusSNS"];
+      if (status.containsKey("CO2"))
+      {
+        // co2 co2payload = parseCo2Struct(status, 1337);
+
+        co2 tempCo2Payload = parseCo2Struct(status, 1337);
+
+        co2 *co2payload = (co2 *)pvPortMalloc(sizeof(co2));
+        if (co2payload == NULL)
+        {
+          Serial.println(F("Failed to allocate heap memory for co2payload."));
+        }
+        else
+        {
+          memcpy(co2payload, &tempCo2Payload, sizeof(co2));
+
+          Serial.print("Enqueuing co2 telemetry for uplink.");
+          Serial.println("T: " + String(co2payload->t));
+          Serial.println("CO2: " + String(co2payload->co2));
+          Serial.println("Illuminance: " + String(co2payload->illuminance));
+          Serial.println("Counter: " + String(co2payload->counter));
+
+          linkMessage *ptxuplinkMessage = (linkMessage *)pvPortMalloc(sizeof(linkMessage));
+          if (ptxuplinkMessage == NULL)
+          {
+            Serial.println(F("Failed to allocate heap memory for ptxuplinkMessage."));
+          }
+          else
+          {
+            ptxuplinkMessage->fport = 14;
+            ptxuplinkMessage->length = sizeof(co2);
+            ptxuplinkMessage->data = (uint8_t *)co2payload;
+            xQueueSend(uplinkQueue, &ptxuplinkMessage, (TickType_t)0);
+          }
+        }
+      }
+      else
+      {
+        Serial.println("No parseable data in payload.");
+        String nodeName = mqtt.get_topic_element(prxMqttMessage->topic.c_str(), 1);
+        Serial.printf("topic: '%s'; payload: %s; nodeName: %s\n", prxMqttMessage->topic.c_str(), prxMqttMessage->payload, nodeName);
+      }
+
       Serial.print("Freed heap. Free heap: ");
       Serial.println(xPortGetFreeHeapSize());
     }
+  }
+}
+
+void printStatusMsgTask(void *parameter)
+{
+  const TickType_t xDelay = 5000 / portTICK_PERIOD_MS;
+
+  while (true)
+  {
+    // DateTime time = rtc.now();
+    // Serial.println(String("Time:\t") + time.timestamp(DateTime::TIMESTAMP_FULL));
+    // Serial.println("High watermarks:\n");
+    // Serial.print("LmicTask: ");
+    // Serial.println(uxTaskGetStackHighWaterMark(LmicTask));
+    // Serial.print("MqttTask: ");
+    // Serial.println(uxTaskGetStackHighWaterMark(MqttTask));
+    // Serial.print("HandleMsgTask: ");
+    // Serial.println(uxTaskGetStackHighWaterMark(HandleMsgTask));
+    // Serial.print("SendMsgTask: ");
+    // Serial.println(uxTaskGetStackHighWaterMark(SendMsgTask));
+    // Serial.print("DoWorkTask: ");
+    // Serial.println(uxTaskGetStackHighWaterMark(DoWorkTask));
+    // Serial.print("HandleDownlinkMsgTask: ");
+    // Serial.println(uxTaskGetStackHighWaterMark(HandleDownlinkMsgTask));
+    // Serial.print("HandleMqttMsgTask: ");
+    // Serial.println(uxTaskGetStackHighWaterMark(DoWorkTask));
+
+    String topic = "picomqtt/stats";
+    String message = "MqttTask: " + String(uxTaskGetStackHighWaterMark(MqttTask));
+    // Serial.printf("Publishing message in topic '%s': %s\n", topic.c_str(), message.c_str());
+    mqtt.publish(topic, message);
+
+    vTaskDelay(xDelay);
   }
 }

@@ -11,6 +11,7 @@
 #include <PicoMQTT.h>
 
 #include "esp_wifi.h"
+#include <ESPmDNS.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 
@@ -36,5 +37,6 @@
 */
 #include "utils.h"
 #include "lmic-node.h"
+#include "http_client.h"
 
 #endif

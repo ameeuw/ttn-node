@@ -3,6 +3,8 @@
 void processWork(ostime_t doWorkJobTimeStamp, uint16_t counterValue);
 void sendCounterValue(uint16_t counterValue);
 
+bool joined = false;
+
 linkMessage downlinkMessage;
 QueueHandle_t downlinkQueue = xQueueCreate(10, sizeof(struct linkMessage *));
 
@@ -188,6 +190,10 @@ void onEvent(ev_t ev)
         // have to wait until the current doWork interval ends.
         // os_clearCallback(&doWorkJob);
         // os_setCallback(&doWorkJob, doWorkCallback);
+
+        Serial.println("EV_JOINED EVENT!");
+        joined = true;
+
         break;
 
     case EV_TXCOMPLETE:
@@ -210,6 +216,8 @@ void onEvent(ev_t ev)
         break;
     case EV_LINK_DEAD:
         printEvent(timestamp, ev);
+        Serial.println("EV_LINK_DEAD EVENT!");
+        Serial.println("Restarting...");
         ESP.restart();
         break;
 
@@ -220,7 +228,12 @@ void onEvent(ev_t ev)
     case EV_BEACON_TRACKED:
     case EV_RFU1: // This event is defined but not used in code
     case EV_JOINING:
+        Serial.println("EV_JOIN_FAILED EVENT!");
+        break;
     case EV_JOIN_FAILED:
+        Serial.println("EV_JOIN_FAILED EVENT!");
+        joined = false;
+        break;
     case EV_REJOIN_FAILED:
     case EV_LOST_TSYNC:
     case EV_RESET:

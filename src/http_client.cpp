@@ -2,6 +2,7 @@
 
 meter parseMeterStruct(JsonObject doc, uint16_t counterValue);
 tracer parseTracerStruct(JsonObject doc, uint16_t counterValue);
+co2 parseCo2Struct(JsonObject doc, uint16_t counterValue);
 
 String fetchPayload(String serverName)
 {
