@@ -1,46 +1,42 @@
+### TTGO T-BEAM LMIC-Node
 
-This directory is intended for project specific (private) libraries.
-PlatformIO will compile them to static libraries and link into executable file.
+This code holds the functionality to keep a collection of nodes based on Tasmota working without internet.
+The uplink and downlink is realised via LoRaWAN (TheThingsNetwork TTN), local connectivity is handled by 
+PicoMQTT and time synchronisation is achieved via GPS.
 
-The source code of each library should be placed in a an own separate directory
-("lib/your_library_name/[here are source files]").
+The process is divided into multiple tasks which either act on incoming events or work off queues
 
-For example, see a structure of the following two libraries `Foo` and `Bar`:
+### Hardware
+Lopy v1
+TTGO Lora32
+TTGO T-Beam V1.2
 
-|--lib
-|  |
-|  |--Bar
-|  |  |--docs
-|  |  |--examples
-|  |  |--src
-|  |     |- Bar.c
-|  |     |- Bar.h
-|  |  |- library.json (optional, custom build options, etc) https://docs.platformio.org/page/librarymanager/config.html
-|  |
-|  |--Foo
-|  |  |- Foo.c
-|  |  |- Foo.h
-|  |
-|  |- README --> THIS FILE
-|
-|- platformio.ini
-|--src
-   |- main.c
+### Tasks
+- HandleUplinkMessage
+- HandleDownloadMessage
+  
+### Queues
+- UplinkQueue
+- DownlinkQueue
 
-and a contents of `src/main.c`:
-```
-#include <Foo.h>
-#include <Bar.h>
+### PicoMQTT
+### Tasmota Registry
+- 
 
-int main (void)
-{
-  ...
-}
-
-```
-
-PlatformIO Library Dependency Finder will find automatically dependent
-libraries scanning project source files.
-
-More information about PlatformIO Library Dependency Finder
-- https://docs.platformio.org/page/librarymanager/ldf.html
+### Todos
+- Keep list of registered devices
+- Scan for known sensors and anticipate payloads
+- Automatically export payload formatter using script
+- Map fports to structs
+- Sync time from GPS
+- Update time on registered nodes via MQTT
+- Set teleperiod on registered devices
+- Unqueue double messages
+- Add prioritisation to linkMessages
+- Check memory allocation and freeing
+- Add back DISTANCE MOVED
+- Forward Downlink messages to MQTT
+- Confirm sending of downlink messages via uplink message
+- Change key management to be equivalent to ttn mapper style
+- Forward LMIC events via MQTT
+- Reboot or reconnect on lost LMIC connection
