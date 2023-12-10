@@ -1,7 +1,6 @@
 #include <include.h>
-#include "RTClib.h"
 
-RTC_DS1307 rtc;
+const int UTC_offset = 1; // Central European Time
 
 PicoMQTT::Server mqtt;
 
@@ -86,31 +85,31 @@ void initMqtt()
 
 void forwardMqttToQueue(const char *topic, const char *payload)
 {
-  Serial.printf("Received message in topic '%s': %s\n", topic, payload);
-  Serial.print("Allocating memory. Free heap: ");
-  Serial.println(xPortGetFreeHeapSize());
+  String nodeName = mqtt.get_topic_element(topic, 1);
+  Serial.printf("topic: '%s'\npayload: %s\nnodeName: %s\n", topic, payload, nodeName);
 
-  DynamicJsonDocument doc(1024);
-  deserializeJson(doc, payload);
-  const JsonObject status = doc["StatusSNS"];
-  if (status.containsKey("CO2"))
+  if (nodeName == "CO2")
   {
-    co2 tempCo2Payload = parseCo2Struct(status, 1337);
 
-    co2 *co2payload = (co2 *)pvPortMalloc(sizeof(co2));
-    if (co2payload == NULL)
+    co2Struct *co2Payload = (co2Struct *)pvPortMalloc(sizeof(co2Struct));
+    if (co2Payload == NULL)
     {
-      Serial.println(F("Failed to allocate heap memory for co2payload."));
+      Serial.println(F("Failed to allocate heap memory for co2Payload."));
     }
     else
     {
-      memcpy(co2payload, &tempCo2Payload, sizeof(co2));
+      DynamicJsonDocument doc(1024);
+      deserializeJson(doc, payload);
+      co2Struct tempCo2Payload = parseCo2Struct(doc, 1337);
+      memcpy(co2Payload, &tempCo2Payload, sizeof(co2Struct));
 
-      Serial.print("Enqueuing co2 telemetry for uplink.");
-      Serial.println("T: " + String(co2payload->t));
-      Serial.println("CO2: " + String(co2payload->co2));
-      Serial.println("Illuminance: " + String(co2payload->illuminance));
-      Serial.println("Counter: " + String(co2payload->counter));
+      Serial.println("Enqueuing co2 telemetry for uplink.");
+#ifdef DEBUG
+      Serial.println("T: " + String(co2Payload->t));
+      Serial.println("CO2: " + String(co2Payload->co2));
+      Serial.println("Illuminance: " + String(co2Payload->illuminance));
+      Serial.println("Counter: " + String(co2Payload->counter));
+#endif
 
       linkMessage *ptxuplinkMessage = (linkMessage *)pvPortMalloc(sizeof(linkMessage));
       if (ptxuplinkMessage == NULL)
@@ -120,8 +119,8 @@ void forwardMqttToQueue(const char *topic, const char *payload)
       else
       {
         ptxuplinkMessage->fport = 14;
-        ptxuplinkMessage->length = sizeof(co2);
-        ptxuplinkMessage->data = (uint8_t *)co2payload;
+        ptxuplinkMessage->length = sizeof(co2Struct);
+        ptxuplinkMessage->data = (uint8_t *)co2Payload;
         xQueueSend(uplinkQueue, &ptxuplinkMessage, (TickType_t)0);
       }
     }
@@ -129,8 +128,6 @@ void forwardMqttToQueue(const char *topic, const char *payload)
   else
   {
     Serial.println("No parseable data in payload.");
-    String nodeName = mqtt.get_topic_element(topic, 1);
-    Serial.printf("topic: '%s'; payload: %s; nodeName: %s\n", topic, payload, nodeName);
   }
 }
 
@@ -149,6 +146,13 @@ void setup()
 #endif
   serial.begin(115200);
 
+  startup_axp();
+  axp_print();
+  delay(3000);
+  setup_axp();
+  end_gps();
+
+#ifdef USE_RTC
   if (!rtc.begin())
   {
     Serial.println("Couldn't find RTC");
@@ -175,10 +179,11 @@ void setup()
   {
     Serial.println("RTC is running");
   }
-
   delay(1000);
   DateTime now = rtc.now();
   Serial.println(String("Time:\t") + now.timestamp(DateTime::TIMESTAMP_FULL));
+#endif
+
   // put your setup code here, to run once:
   setupLmic();
   initMqtt();
@@ -251,6 +256,7 @@ void handleUplinkMsgTask(void *parameter)
     {
       Serial.println("Not joined yet.");
     }
+
     vTaskDelay(xDelay);
   }
 }
@@ -300,7 +306,11 @@ void handleDownlinkMsgTask(void *parameter)
       {
         uint32_t unixtime = prxdownlinkMessage->data[1] | (uint32_t)prxdownlinkMessage->data[2] << 8 | (uint32_t)prxdownlinkMessage->data[3] << 16 | (uint32_t)prxdownlinkMessage->data[4] << 24;
         Serial.printf("Setting RTC to unix time: %d\n", unixtime);
+#ifdef USE_RTC
         rtc.adjust(unixtime);
+#else
+        setTime(unixtime);
+#endif
       }
       vPortFree(prxdownlinkMessage);
     }
@@ -309,21 +319,96 @@ void handleDownlinkMsgTask(void *parameter)
 
 void printStatusMsgTask(void *parameter)
 {
-  const TickType_t xDelay = 5000 / portTICK_PERIOD_MS;
+  const TickType_t xDelay = 30000 / portTICK_PERIOD_MS;
+  uint16_t counter = 0;
 
   while (true)
   {
-    DateTime now = rtc.now();
     String topic = "ludwig/stats";
     DynamicJsonDocument doc(1024);
     doc["MqttTask"] = uxTaskGetStackHighWaterMark(MqttTask);
     doc["LmicTask"] = uxTaskGetStackHighWaterMark(LmicTask);
     doc["HandleUplinkMsgTask"] = uxTaskGetStackHighWaterMark(HandleUplinkMsgTask);
     doc["HandleDownlinkMsgTask"] = uxTaskGetStackHighWaterMark(HandleDownlinkMsgTask);
+#ifdef USE_RTC
+    DateTime now = rtc.now();
     doc["Time"] = now.timestamp(DateTime::TIMESTAMP_FULL);
+#else
+    doc["Time"] = now();
+#endif
     String message;
     serializeJson(doc, message);
     mqtt.publish(topic, message);
+
+    if (counter % 6 == 0)
+    {
+
+      setup_gps();
+      int gpsStatus = getGPS();
+      if (gpsStatus == 0)
+        axp_gps(1); // give GPS more volt to get a fix
+      else
+        axp_gps(2); // turn down voltage for GPS to save energy
+
+      if (gpsStatus == 1)
+      {
+        int Year = gps.date.year();
+        byte Month = gps.date.month();
+        byte Day = gps.date.day();
+        byte Hour = gps.time.hour();
+        byte Minute = gps.time.minute();
+        byte Second = gps.time.second();
+
+        // Set Time from GPS data string
+        setTime(Hour, Minute, Second, Day, Month, Year);
+        // Calc current Time Zone time by offset value
+        adjustTime(UTC_offset * SECS_PER_HOUR);
+
+        String topic = "cmnd/CO2/time";
+        mqtt.publish(topic, String(now()));
+
+        gpsStruct *gpsPayload = (gpsStruct *)pvPortMalloc(sizeof(gpsStruct));
+        if (gpsPayload == NULL)
+        {
+          Serial.println(F("Failed to allocate heap memory for gpsPayload."));
+        }
+        else
+        {
+          gpsPayload->latitude = gps.location.lat();
+          gpsPayload->longitude = gps.location.lng();
+          gpsPayload->altitude = gps.altitude.meters();
+          gpsPayload->t = now();
+          gpsPayload->counter = counter;
+
+          Serial.print("Enqueuing gps telemetry for uplink.");
+#ifdef DEBUG
+          Serial.println("T: " + String(gpsPayload->t));
+          Serial.println("Latitude: " + String(gpsPayload->latitude));
+          Serial.println("Longitude: " + String(gpsPayload->longitude));
+          Serial.println("Altitude: " + String(gpsPayload->altitude));
+          Serial.println("Counter: " + String(gpsPayload->counter));
+#endif
+
+          linkMessage *ptxuplinkMessage = (linkMessage *)pvPortMalloc(sizeof(linkMessage));
+          if (ptxuplinkMessage == NULL)
+          {
+            Serial.println(F("Failed to allocate heap memory for ptxuplinkMessage."));
+          }
+          else
+          {
+            ptxuplinkMessage->fport = 15;
+            ptxuplinkMessage->length = sizeof(gpsStruct);
+            ptxuplinkMessage->data = (uint8_t *)gpsPayload;
+            xQueueSend(uplinkQueue, &ptxuplinkMessage, (TickType_t)0);
+          }
+        }
+      }
+      else
+      {
+        Serial.println("No GPS");
+      }
+    }
+    counter++;
 
     vTaskDelay(xDelay);
   }

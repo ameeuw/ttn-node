@@ -3,8 +3,8 @@
 
 #include "include.h"
 
-meter parseMeterStruct(JsonObject doc, uint16_t counterValue);
-tracer parseTracerStruct(JsonObject doc, uint16_t counterValue);
-co2 parseCo2Struct(JsonObject doc, uint16_t counterValue);
+meterStruct parseMeterStruct(JsonObject doc, uint16_t counterValue);
+tracerStruct parseTracerStruct(JsonObject doc, uint16_t counterValue);
+co2Struct parseCo2Struct(DynamicJsonDocument doc, uint16_t counterValue);
 
 #endif

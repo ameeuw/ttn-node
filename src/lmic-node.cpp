@@ -319,9 +319,6 @@ void processWork(ostime_t doWorkJobTimeStamp, uint16_t counterValue)
         // information better readable on the small display.
         display.clearLine(INTERVAL_ROW);
         display.setCursor(COL_0, INTERVAL_ROW);
-        display.print("I:");
-        display.print(doWorkIntervalSeconds);
-        display.print("s");
         display.print(" Ctr:");
         display.print(counterValue);
 #endif

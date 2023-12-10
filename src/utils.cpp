@@ -193,9 +193,6 @@ void printHeader(void)
 #endif
     display.drawString(COL_0, DEVICEID_ROW, deviceId);
     display.setCursor(COL_0, INTERVAL_ROW);
-    display.print(F("Interval:"));
-    display.print(doWorkIntervalSeconds);
-    display.print("s");
 #endif
 
 #ifdef USE_SERIAL

@@ -1,7 +1,7 @@
 #ifndef typedef_h
 #define typedef_h
 
-struct tracer
+struct tracerStruct
 {
     float batteryTemperature;
     float batterySoc;
@@ -21,7 +21,7 @@ struct tracer
     uint32_t t;
 };
 
-struct meter
+struct meterStruct
 {
     float batteryVoltage;
     float loadPower;
@@ -30,10 +30,19 @@ struct meter
     uint16_t counter;
 };
 
-struct co2
+struct co2Struct
 {
     uint16_t co2;
     uint16_t illuminance;
+    uint32_t t;
+    uint16_t counter;
+};
+
+struct gpsStruct
+{
+    double latitude;
+    double longitude;
+    double altitude;
     uint32_t t;
     uint16_t counter;
 };

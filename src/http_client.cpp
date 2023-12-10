@@ -1,8 +1,8 @@
 #include "include.h"
 
-meter parseMeterStruct(JsonObject doc, uint16_t counterValue);
-tracer parseTracerStruct(JsonObject doc, uint16_t counterValue);
-co2 parseCo2Struct(JsonObject doc, uint16_t counterValue);
+meterStruct parseMeterStruct(JsonObject doc, uint16_t counterValue);
+tracerStruct parseTracerStruct(JsonObject doc, uint16_t counterValue);
+co2Struct parseCo2Struct(DynamicJsonDocument doc, uint16_t counterValue);
 
 String fetchPayload(String serverName)
 {
@@ -72,7 +72,7 @@ void collect(uint16_t counterValue)
                 const JsonObject status = doc["StatusSNS"];
                 if (status.containsKey("TRACER"))
                 {
-                    tracer tracerPayload = parseTracerStruct(status, counterValue);
+                    tracerStruct tracerPayload = parseTracerStruct(status, counterValue);
                     Serial.print("Sending tracer telemetry at t=");
                     Serial.print(tracerPayload.t);
                     Serial.println(" ms");
@@ -81,7 +81,7 @@ void collect(uint16_t counterValue)
                 }
                 else if (status.containsKey("meter"))
                 {
-                    meter meterPayload = parseMeterStruct(status, counterValue);
+                    meterStruct meterPayload = parseMeterStruct(status, counterValue);
                     Serial.print("Sending meter telemetry at t=");
                     Serial.print(meterPayload.t);
                     Serial.println(" ms");
@@ -106,9 +106,9 @@ void collect(uint16_t counterValue)
     }
 }
 
-meter parseMeterStruct(JsonObject doc, uint16_t counterValue)
+meterStruct parseMeterStruct(JsonObject doc, uint16_t counterValue)
 {
-    meter meterPayload = {
+    meterStruct meterPayload = {
         ((float)doc["ANALOG"]["Range"]) / 1000,
         doc["meter"]["power"],
         doc["meter"]["consumption"],
@@ -118,9 +118,9 @@ meter parseMeterStruct(JsonObject doc, uint16_t counterValue)
     return meterPayload;
 }
 
-tracer parseTracerStruct(JsonObject doc, uint16_t counterValue)
+tracerStruct parseTracerStruct(JsonObject doc, uint16_t counterValue)
 {
-    tracer tracerPayload = {
+    tracerStruct tracerPayload = {
         doc["TRACER"]["batteryTemperature"],
         doc["TRACER"]["batterySoc"],
         doc["TRACER"]["batteryVoltage"],
@@ -141,12 +141,12 @@ tracer parseTracerStruct(JsonObject doc, uint16_t counterValue)
     return tracerPayload;
 }
 
-co2 parseCo2Struct(JsonObject doc, uint16_t counterValue)
+co2Struct parseCo2Struct(DynamicJsonDocument doc, uint16_t counterValue)
 {
-    return (co2){
-        doc["CO2"],
+    return (co2Struct){
+        doc["S8"]["CarbonDioxide"],
         doc["ANALOG"]["Illuminance"],
-        millis(),
+        now(),
         counterValue,
     };
 }
