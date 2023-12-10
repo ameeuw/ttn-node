@@ -8,32 +8,19 @@ PicoMQTT::Server mqtt;
 // Task definitions
 void lmicTask(void *);
 void mqttTask(void *);
-void handleMsgTask(void *);
-void sendMsgTask(void *);
 void handleUplinkMsgTask(void *);
 void handleDownlinkMsgTask(void *parameter);
-void handleMqttMsgTask(void *parameter);
 void printStatusMsgTask(void *parameter);
-
-// Internal queue
-qMessage txMessage;
-QueueHandle_t xQueue = xQueueCreate(10, sizeof(struct qMessage *));
 
 // LoRaWAN queues
 extern QueueHandle_t downlinkQueue;
 linkMessage uplinklinkMessage;
 QueueHandle_t uplinkQueue = xQueueCreate(10, sizeof(struct linkMessage *));
 
-// MQTT queue
-QueueHandle_t mqttQueue = xQueueCreate(10, sizeof(struct mqttMessage *));
-
 TaskHandle_t LmicTask;
 TaskHandle_t MqttTask;
-TaskHandle_t HandleMsgTask;
-TaskHandle_t SendMsgTask;
 TaskHandle_t HandleUplinkMsgTask;
 TaskHandle_t HandleDownlinkMsgTask;
-TaskHandle_t HandleMqttMsgTask;
 
 void initTasks(void)
 {
@@ -57,29 +44,9 @@ void initTasks(void)
       1            /* Pinned CPU core. */
   );
 
-  // xTaskCreatePinnedToCore(
-  //     handleMsgTask,         /* Task function. */
-  //     "Handle Message Task", /* String with name of task. */
-  //     10000,                 /* Stack size in words. */
-  //     NULL,                  /* Parameter passed as input of the task */
-  //     2,                     /* Priority of the task. */
-  //     &HandleMsgTask,        /* Task handle. */
-  //     1                      /* Pinned CPU core. */
-  // );
-
-  // xTaskCreatePinnedToCore(
-  //     sendMsgTask,         /* Task function. */
-  //     "Send Message Task", /* String with name of task. */
-  //     10000,               /* Stack size in words. */
-  //     NULL,                /* Parameter passed as input of the task */
-  //     3,                   /* Priority of the task. */
-  //     &SendMsgTask,        /* Task handle. */
-  //     1                    /* Pinned CPU core. */
-  // );
-
   xTaskCreatePinnedToCore(
       handleUplinkMsgTask,  /* Task function. */
-      "DoWork Task",        /* String with name of task. */
+      "Handle Uplink Task", /* String with name of task. */
       10000,                /* Stack size in words. */
       NULL,                 /* Parameter passed as input of the task */
       3,                    /* Priority of the task. */
@@ -95,16 +62,6 @@ void initTasks(void)
       2,                      /* Priority of the task. */
       &HandleDownlinkMsgTask, /* Task handle. */
       1                       /* Pinned CPU core. */
-  );
-
-  xTaskCreatePinnedToCore(
-      handleMqttMsgTask,  /* Task function. */
-      "Handle Mqtt Task", /* String with name of task. */
-      10000,              /* Stack size in words. */
-      NULL,               /* Parameter passed as input of the task */
-      1,                  /* Priority of the task. */
-      &HandleMqttMsgTask, /* Task handle. */
-      1                   /* Pinned CPU core. */
   );
 
   xTaskCreatePinnedToCore(
@@ -127,33 +84,53 @@ void initMqtt()
   mqtt.begin();
 }
 
-mqttMessage mMessage;
-
 void forwardMqttToQueue(const char *topic, const char *payload)
 {
   Serial.printf("Received message in topic '%s': %s\n", topic, payload);
   Serial.print("Allocating memory. Free heap: ");
   Serial.println(xPortGetFreeHeapSize());
-  // mqttMessage *ptxMqttMessage = (mqttMessage *)pvPortMalloc(sizeof(mqttMessage));
 
-  struct mqttMessage *ptxMqttMessage;
-  ptxMqttMessage = &mMessage;
-  if (ptxMqttMessage == NULL)
+  DynamicJsonDocument doc(1024);
+  deserializeJson(doc, payload);
+  const JsonObject status = doc["StatusSNS"];
+  if (status.containsKey("CO2"))
   {
-    Serial.println(F("Failed to allocate heap memory."));
-    Serial.printf("topic: '%s'; payload: %s\n", topic, payload);
+    co2 tempCo2Payload = parseCo2Struct(status, 1337);
+
+    co2 *co2payload = (co2 *)pvPortMalloc(sizeof(co2));
+    if (co2payload == NULL)
+    {
+      Serial.println(F("Failed to allocate heap memory for co2payload."));
+    }
+    else
+    {
+      memcpy(co2payload, &tempCo2Payload, sizeof(co2));
+
+      Serial.print("Enqueuing co2 telemetry for uplink.");
+      Serial.println("T: " + String(co2payload->t));
+      Serial.println("CO2: " + String(co2payload->co2));
+      Serial.println("Illuminance: " + String(co2payload->illuminance));
+      Serial.println("Counter: " + String(co2payload->counter));
+
+      linkMessage *ptxuplinkMessage = (linkMessage *)pvPortMalloc(sizeof(linkMessage));
+      if (ptxuplinkMessage == NULL)
+      {
+        Serial.println(F("Failed to allocate heap memory for ptxuplinkMessage."));
+      }
+      else
+      {
+        ptxuplinkMessage->fport = 14;
+        ptxuplinkMessage->length = sizeof(co2);
+        ptxuplinkMessage->data = (uint8_t *)co2payload;
+        xQueueSend(uplinkQueue, &ptxuplinkMessage, (TickType_t)0);
+      }
+    }
   }
   else
   {
-    Serial.println("Forwarding message");
-    // memcpy(&ptxMqttMessage->topic, topic, strlen(topic) + 1);
-    // memcpy(&ptxMqttMessage->payload, payload, strlen(payload) + 1);
-    ptxMqttMessage->topic = topic;
-    ptxMqttMessage->payload = payload;
-    Serial.print("Free heap: ");
-    Serial.println(xPortGetFreeHeapSize());
-    Serial.printf("topic: '%s'; payload: %s\n", ptxMqttMessage->topic.c_str(), ptxMqttMessage->payload);
-    xQueueSend(mqttQueue, &ptxMqttMessage, (TickType_t)0);
+    Serial.println("No parseable data in payload.");
+    String nodeName = mqtt.get_topic_element(topic, 1);
+    Serial.printf("topic: '%s'; payload: %s; nodeName: %s\n", topic, payload, nodeName);
   }
 }
 
@@ -170,6 +147,7 @@ void setup()
 #else
   WiFi.softAP("MyESP32AP");
 #endif
+  serial.begin(115200);
 
   if (!rtc.begin())
   {
@@ -198,9 +176,11 @@ void setup()
     Serial.println("RTC is running");
   }
 
+  delay(1000);
+  DateTime now = rtc.now();
+  Serial.println(String("Time:\t") + now.timestamp(DateTime::TIMESTAMP_FULL));
   // put your setup code here, to run once:
   setupLmic();
-  // serial.begin(115200);
   initMqtt();
   initTasks();
 }
@@ -264,6 +244,7 @@ void handleUplinkMsgTask(void *parameter)
         }
 
         vPortFree(prxuplinkMessage);
+        vPortFree(prxuplinkMessage->data);
       }
     }
     else
@@ -271,64 +252,6 @@ void handleUplinkMsgTask(void *parameter)
       Serial.println("Not joined yet.");
     }
     vTaskDelay(xDelay);
-  }
-}
-
-void sendMsgTask(void *parameter)
-{
-  uint lastMsg = 0;
-  uint8_t msgCounter = 0;
-  const TickType_t xDelay = 25000 / portTICK_PERIOD_MS;
-
-  while (true)
-  {
-    DateTime time = rtc.now();
-    Serial.printf("Time:\t%s", time.timestamp(DateTime::TIMESTAMP_FULL));
-    Serial.printf("last/now: %d / %d\n", lastMsg, millis());
-
-    qMessage *ptxqMessage = (qMessage *)pvPortMalloc(sizeof(qMessage));
-    if (ptxqMessage == NULL)
-    {
-      Serial.println(F("Failed to allocate heap memory."));
-    }
-    else
-    {
-      Serial.println("Sending message...");
-      ptxqMessage->id = msgCounter;
-      String msg = "This is a test message...";
-      ptxqMessage->length = msg.length();
-      memcpy(ptxqMessage->payload, msg.c_str(), ptxqMessage->length);
-      xQueueSend(xQueue, &ptxqMessage, (TickType_t)0);
-
-      msgCounter++;
-      lastMsg = millis();
-    }
-
-    vTaskDelay(xDelay);
-  }
-}
-
-void handleMsgTask(void *parameter)
-{
-  struct qMessage *prxqMessage;
-  while (true)
-  {
-    // Pend on new message in queue and forward it to the corresponding handler
-    if (xQueueReceive(xQueue, &(prxqMessage), portMAX_DELAY))
-    {
-      Serial.println("Received xQueue");
-      Serial.print("id: ");
-      Serial.println((uint8_t)prxqMessage->id);
-      Serial.print("length: ");
-      Serial.println((uint8_t)prxqMessage->length);
-      Serial.print("payload: ");
-      for (uint8_t i = 0; i < (uint8_t)prxqMessage->length; i++)
-      {
-        Serial.print(prxqMessage->payload[i]);
-      }
-      Serial.println("");
-      vPortFree(prxqMessage);
-    }
   }
 }
 
@@ -384,97 +307,22 @@ void handleDownlinkMsgTask(void *parameter)
   }
 }
 
-void handleMqttMsgTask(void *parameter)
-{
-  mqttMessage *prxMqttMessage;
-
-  while (true)
-  {
-    // Pend on new message in queue and forward it to the corresponding handler
-    if (xQueueReceive(mqttQueue, &(prxMqttMessage), portMAX_DELAY))
-    {
-      Serial.println("Received mqttQueue");
-
-      // vPortFree(prxMqttMessage);
-
-      DynamicJsonDocument doc(1024);
-      deserializeJson(doc, prxMqttMessage->payload);
-      const JsonObject status = doc["StatusSNS"];
-      if (status.containsKey("CO2"))
-      {
-        // co2 co2payload = parseCo2Struct(status, 1337);
-
-        co2 tempCo2Payload = parseCo2Struct(status, 1337);
-
-        co2 *co2payload = (co2 *)pvPortMalloc(sizeof(co2));
-        if (co2payload == NULL)
-        {
-          Serial.println(F("Failed to allocate heap memory for co2payload."));
-        }
-        else
-        {
-          memcpy(co2payload, &tempCo2Payload, sizeof(co2));
-
-          Serial.print("Enqueuing co2 telemetry for uplink.");
-          Serial.println("T: " + String(co2payload->t));
-          Serial.println("CO2: " + String(co2payload->co2));
-          Serial.println("Illuminance: " + String(co2payload->illuminance));
-          Serial.println("Counter: " + String(co2payload->counter));
-
-          linkMessage *ptxuplinkMessage = (linkMessage *)pvPortMalloc(sizeof(linkMessage));
-          if (ptxuplinkMessage == NULL)
-          {
-            Serial.println(F("Failed to allocate heap memory for ptxuplinkMessage."));
-          }
-          else
-          {
-            ptxuplinkMessage->fport = 14;
-            ptxuplinkMessage->length = sizeof(co2);
-            ptxuplinkMessage->data = (uint8_t *)co2payload;
-            xQueueSend(uplinkQueue, &ptxuplinkMessage, (TickType_t)0);
-          }
-        }
-      }
-      else
-      {
-        Serial.println("No parseable data in payload.");
-        String nodeName = mqtt.get_topic_element(prxMqttMessage->topic.c_str(), 1);
-        Serial.printf("topic: '%s'; payload: %s; nodeName: %s\n", prxMqttMessage->topic.c_str(), prxMqttMessage->payload, nodeName);
-      }
-
-      Serial.print("Freed heap. Free heap: ");
-      Serial.println(xPortGetFreeHeapSize());
-    }
-  }
-}
-
 void printStatusMsgTask(void *parameter)
 {
   const TickType_t xDelay = 5000 / portTICK_PERIOD_MS;
 
   while (true)
   {
-    // DateTime time = rtc.now();
-    // Serial.println(String("Time:\t") + time.timestamp(DateTime::TIMESTAMP_FULL));
-    // Serial.println("High watermarks:\n");
-    // Serial.print("LmicTask: ");
-    // Serial.println(uxTaskGetStackHighWaterMark(LmicTask));
-    // Serial.print("MqttTask: ");
-    // Serial.println(uxTaskGetStackHighWaterMark(MqttTask));
-    // Serial.print("HandleMsgTask: ");
-    // Serial.println(uxTaskGetStackHighWaterMark(HandleMsgTask));
-    // Serial.print("SendMsgTask: ");
-    // Serial.println(uxTaskGetStackHighWaterMark(SendMsgTask));
-    // Serial.print("DoWorkTask: ");
-    // Serial.println(uxTaskGetStackHighWaterMark(DoWorkTask));
-    // Serial.print("HandleDownlinkMsgTask: ");
-    // Serial.println(uxTaskGetStackHighWaterMark(HandleDownlinkMsgTask));
-    // Serial.print("HandleMqttMsgTask: ");
-    // Serial.println(uxTaskGetStackHighWaterMark(DoWorkTask));
-
-    String topic = "picomqtt/stats";
-    String message = "MqttTask: " + String(uxTaskGetStackHighWaterMark(MqttTask));
-    // Serial.printf("Publishing message in topic '%s': %s\n", topic.c_str(), message.c_str());
+    DateTime now = rtc.now();
+    String topic = "ludwig/stats";
+    DynamicJsonDocument doc(1024);
+    doc["MqttTask"] = uxTaskGetStackHighWaterMark(MqttTask);
+    doc["LmicTask"] = uxTaskGetStackHighWaterMark(LmicTask);
+    doc["HandleUplinkMsgTask"] = uxTaskGetStackHighWaterMark(HandleUplinkMsgTask);
+    doc["HandleDownlinkMsgTask"] = uxTaskGetStackHighWaterMark(HandleDownlinkMsgTask);
+    doc["Time"] = now.timestamp(DateTime::TIMESTAMP_FULL);
+    String message;
+    serializeJson(doc, message);
     mqtt.publish(topic, message);
 
     vTaskDelay(xDelay);
