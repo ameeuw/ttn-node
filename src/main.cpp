@@ -5,9 +5,13 @@ const int UTC_offset = 1; // Central European Time
 PicoMQTT::Server mqtt;
 
 // Task definitions
+TaskHandle_t LmicTask;
 void lmicTask(void *);
+TaskHandle_t MqttTask;
 void mqttTask(void *);
+TaskHandle_t HandleUplinkMsgTask;
 void handleUplinkMsgTask(void *);
+TaskHandle_t HandleDownlinkMsgTask;
 void handleDownlinkMsgTask(void *parameter);
 void printStatusMsgTask(void *parameter);
 
@@ -15,11 +19,6 @@ void printStatusMsgTask(void *parameter);
 extern QueueHandle_t downlinkQueue;
 linkMessage uplinklinkMessage;
 QueueHandle_t uplinkQueue = xQueueCreate(10, sizeof(struct linkMessage *));
-
-TaskHandle_t LmicTask;
-TaskHandle_t MqttTask;
-TaskHandle_t HandleUplinkMsgTask;
-TaskHandle_t HandleDownlinkMsgTask;
 
 void initTasks(void)
 {
@@ -74,15 +73,6 @@ void initTasks(void)
   );
 }
 
-void forwardMqttToQueue(const char *topic, const char *payload);
-
-void initMqtt()
-{
-  // Subscribe to a topic and attach a callback
-  mqtt.subscribe("tele/+/SENSOR", forwardMqttToQueue);
-  mqtt.begin();
-}
-
 void forwardMqttToQueue(const char *topic, const char *payload)
 {
   String nodeName = mqtt.get_topic_element(topic, 1);
@@ -129,6 +119,13 @@ void forwardMqttToQueue(const char *topic, const char *payload)
   {
     Serial.println("No parseable data in payload.");
   }
+}
+
+void initMqtt()
+{
+  // Subscribe to a topic and attach a callback
+  mqtt.subscribe("tele/+/SENSOR", forwardMqttToQueue);
+  mqtt.begin();
 }
 
 void setup()
@@ -184,7 +181,6 @@ void setup()
   Serial.println(String("Time:\t") + now.timestamp(DateTime::TIMESTAMP_FULL));
 #endif
 
-  // put your setup code here, to run once:
   setupLmic();
   initMqtt();
   initTasks();

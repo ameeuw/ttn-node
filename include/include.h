@@ -48,5 +48,6 @@ RTC_DS1307 rtc;
 #include "lmic-node.h"
 #include "http_client.h"
 #include "power.h"
+#include "parsers.h"
 
 #endif

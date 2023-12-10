@@ -3,8 +3,7 @@
 
 #include "include.h"
 
-meterStruct parseMeterStruct(JsonObject doc, uint16_t counterValue);
-tracerStruct parseTracerStruct(JsonObject doc, uint16_t counterValue);
-co2Struct parseCo2Struct(DynamicJsonDocument doc, uint16_t counterValue);
+String fetchPayload(String serverName);
+void collect(uint16_t counterValue);
 
 #endif

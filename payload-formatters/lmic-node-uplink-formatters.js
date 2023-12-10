@@ -36,7 +36,7 @@ const telemetryStruct = `
   };`;
 
 const tracerStruct = `
-struct tracer
+struct tracerStruct
 {
     float batteryTemperature;
     float batterySoc;
@@ -52,26 +52,26 @@ struct tracer
     float consumptionSum;
     float productionSum;
     float batteryMaxVoltage;
+    int32_t t;
     uint16_t counter;
-    uint32_t t;
 };`;
 
 const meterStruct = `
-struct meter
+struct meterStruct
 {
     float batteryVoltage;
     float loadPower;
     float consumptionSum;
+    int32_t t;
     uint16_t counter;
-    uint32_t t;
 };`;
 
 const co2Struct = `
-struct co2
+struct co2Struct
 {
     uint16_t co2;
     uint16_t illuminance;
-    uint32_t t;
+    int32_t t;
     uint16_t counter;
 };`;
 
@@ -81,9 +81,17 @@ struct gpsStruct
     double latitude;
     double longitude;
     double altitude;
-    uint32_t t;
+    int32_t t;
     uint16_t counter;
 };`;
+
+const fportMapping = {
+  11: telemetryStruct,
+  12: tracerStruct,
+  13: meterStruct,
+  14: co2Struct,
+  15: gpsStruct,
+};
 
 // Parses a C struct as an object with name and members with names and types
 function getStructObject(structString) {
@@ -127,25 +135,12 @@ function decodeUplink(input) {
 
   if (input.fPort == 10) {
     data.counter = (input.bytes[0] << 8) + input.bytes[1];
-  } else if (input.fPort == 11) {
+  } else if (Object.keys(fportMapping).includes(input.fPort.toString())) {
     data = {
-      ...decodeStructObject(getStructObject(telemetryStruct), input.bytes),
-    };
-  } else if (input.fPort == 12) {
-    data = {
-      ...decodeStructObject(getStructObject(tracerStruct), input.bytes),
-    };
-  } else if (input.fPort == 13) {
-    data = {
-      ...decodeStructObject(getStructObject(meterStruct), input.bytes),
-    };
-  } else if (input.fPort == 14) {
-    data = {
-      ...decodeStructObject(getStructObject(co2Struct), input.bytes),
-    };
-  } else if (input.fPort == 15) {
-    data = {
-      ...decodeStructObject(getStructObject(gpsStruct), input.bytes),
+      ...decodeStructObject(
+        getStructObject(fportMapping[input.fPort]),
+        input.bytes
+      ),
     };
   } else {
     warnings.push("Unsupported fPort");

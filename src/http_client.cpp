@@ -1,9 +1,5 @@
 #include "include.h"
 
-meterStruct parseMeterStruct(JsonObject doc, uint16_t counterValue);
-tracerStruct parseTracerStruct(JsonObject doc, uint16_t counterValue);
-co2Struct parseCo2Struct(DynamicJsonDocument doc, uint16_t counterValue);
-
 String fetchPayload(String serverName)
 {
     HTTPClient http;
@@ -104,49 +100,4 @@ void collect(uint16_t counterValue)
             Serial.println("No client connected");
         }
     }
-}
-
-meterStruct parseMeterStruct(JsonObject doc, uint16_t counterValue)
-{
-    meterStruct meterPayload = {
-        ((float)doc["ANALOG"]["Range"]) / 1000,
-        doc["meter"]["power"],
-        doc["meter"]["consumption"],
-        millis(),
-        counterValue,
-    };
-    return meterPayload;
-}
-
-tracerStruct parseTracerStruct(JsonObject doc, uint16_t counterValue)
-{
-    tracerStruct tracerPayload = {
-        doc["TRACER"]["batteryTemperature"],
-        doc["TRACER"]["batterySoc"],
-        doc["TRACER"]["batteryVoltage"],
-        doc["TRACER"]["batteryCurrent"],
-        doc["TRACER"]["pvVoltage"],
-        doc["TRACER"]["pvCurrent"],
-        doc["TRACER"]["pvPower"],
-        doc["TRACER"]["loadVoltage"],
-        doc["TRACER"]["loadCurrent"],
-        doc["TRACER"]["loadPower"],
-        doc["TRACER"]["consumptionDay"],
-        doc["TRACER"]["consumptionSum"],
-        doc["TRACER"]["productionSum"],
-        doc["TRACER"]["batteryMaxVoltage"],
-        counterValue,
-        millis(),
-    };
-    return tracerPayload;
-}
-
-co2Struct parseCo2Struct(DynamicJsonDocument doc, uint16_t counterValue)
-{
-    return (co2Struct){
-        doc["S8"]["CarbonDioxide"],
-        doc["ANALOG"]["Illuminance"],
-        now(),
-        counterValue,
-    };
 }
