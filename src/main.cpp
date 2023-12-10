@@ -5,11 +5,12 @@ RTC_DS1307 rtc;
 
 PicoMQTT::Server mqtt;
 
+// Task definitions
 void lmicTask(void *);
 void mqttTask(void *);
 void handleMsgTask(void *);
 void sendMsgTask(void *);
-void doWorkTask(void *);
+void handleUplinkMsgTask(void *);
 void handleDownlinkMsgTask(void *parameter);
 void handleMqttMsgTask(void *parameter);
 void printStatusMsgTask(void *parameter);
@@ -30,7 +31,7 @@ TaskHandle_t LmicTask;
 TaskHandle_t MqttTask;
 TaskHandle_t HandleMsgTask;
 TaskHandle_t SendMsgTask;
-TaskHandle_t DoWorkTask;
+TaskHandle_t HandleUplinkMsgTask;
 TaskHandle_t HandleDownlinkMsgTask;
 TaskHandle_t HandleMqttMsgTask;
 
@@ -77,13 +78,13 @@ void initTasks(void)
   // );
 
   xTaskCreatePinnedToCore(
-      doWorkTask,    /* Task function. */
-      "DoWork Task", /* String with name of task. */
-      10000,         /* Stack size in words. */
-      NULL,          /* Parameter passed as input of the task */
-      3,             /* Priority of the task. */
-      &DoWorkTask,   /* Task handle. */
-      1              /* Pinned CPU core. */
+      handleUplinkMsgTask,  /* Task function. */
+      "DoWork Task",        /* String with name of task. */
+      10000,                /* Stack size in words. */
+      NULL,                 /* Parameter passed as input of the task */
+      3,                    /* Priority of the task. */
+      &HandleUplinkMsgTask, /* Task handle. */
+      1                     /* Pinned CPU core. */
   );
 
   xTaskCreatePinnedToCore(
@@ -228,21 +229,7 @@ void mqttTask(void *parameter)
   }
 }
 
-static volatile uint16_t counter_ = 0;
-
-uint16_t getCounterValue()
-{
-  // Increments counter and returns the new value.
-  return ++counter_;
-}
-
-void resetCounter()
-{
-  // Reset counter to 0
-  counter_ = 0;
-}
-
-void doWorkTask(void *parameter)
+void handleUplinkMsgTask(void *parameter)
 {
   uint8_t count = 0;
   const TickType_t xDelay = 60000 / portTICK_PERIOD_MS;
@@ -283,43 +270,6 @@ void doWorkTask(void *parameter)
     {
       Serial.println("Not joined yet.");
     }
-
-    // Serial.printf("\ndoWorkTask running on core: %d\n", xPortGetCoreID());
-    // // if (count % 3 == 0)
-    // if (joined)
-    // {
-    //   if (true)
-    //   {
-    //     if (LMIC.devaddr != 0)
-    //     {
-    //       if (LMIC.opmode & OP_TXRXPEND)
-    //       {
-    //         Serial.println("Uplink not scheduled because TxRx pending");
-    //       }
-    //       else
-    //       {
-    //         co2 co2Payload = {
-    //             400,
-    //             123,
-    //             rtc.now().unixtime(),
-    //             getCounterValue()};
-
-    //         uint8_t fPort = 14;
-    //         scheduleUplink(fPort, (uint8_t *)&co2Payload, sizeof(co2Payload), false);
-    //       }
-    //       count = 0;
-    //     }
-    //   }
-    //   else
-    //   {
-    //     processWork(millis(), getCounterValue());
-    //   }
-    // }
-    // else
-    // {
-    //   Serial.println("Not joined yet.");
-    // }
-    // count++;
     vTaskDelay(xDelay);
   }
 }
@@ -333,9 +283,7 @@ void sendMsgTask(void *parameter)
   while (true)
   {
     DateTime time = rtc.now();
-    Serial.println(String("Time:\t") + time.timestamp(DateTime::TIMESTAMP_FULL));
-
-    Serial.printf("sendMsgTask running on core: %d\n", xPortGetCoreID());
+    Serial.printf("Time:\t%s", time.timestamp(DateTime::TIMESTAMP_FULL));
     Serial.printf("last/now: %d / %d\n", lastMsg, millis());
 
     qMessage *ptxqMessage = (qMessage *)pvPortMalloc(sizeof(qMessage));
@@ -368,7 +316,6 @@ void handleMsgTask(void *parameter)
     // Pend on new message in queue and forward it to the corresponding handler
     if (xQueueReceive(xQueue, &(prxqMessage), portMAX_DELAY))
     {
-      Serial.printf("handleMsgTask running on core: %d\n", xPortGetCoreID());
       Serial.println("Received xQueue");
       Serial.print("id: ");
       Serial.println((uint8_t)prxqMessage->id);
@@ -398,8 +345,6 @@ void handleDownlinkMsgTask(void *parameter)
     // Pend on new message in queue and forward it to the corresponding handler
     if (xQueueReceive(downlinkQueue, &(prxdownlinkMessage), portMAX_DELAY))
     {
-      Serial.print("\nhandleDownlinkMsgTask running on core: ");
-      Serial.println(xPortGetCoreID());
       Serial.println("Received downlinkQueue");
       Serial.printf("fport: %d; length: %d\n", prxdownlinkMessage->fport, prxdownlinkMessage->length);
       Serial.print("payload: ");
@@ -409,7 +354,6 @@ void handleDownlinkMsgTask(void *parameter)
       }
 
       String topic = "ludwig/downlink";
-
       DynamicJsonDocument doc(1024);
       doc["fport"] = prxdownlinkMessage->fport;
       doc["length"] = prxdownlinkMessage->length;
@@ -428,7 +372,6 @@ void handleDownlinkMsgTask(void *parameter)
       if (prxdownlinkMessage->fport == cmdPort && prxdownlinkMessage->length == 1 && prxdownlinkMessage->data[0] == resetCmd)
       {
         serial.println("Reset cmd received.");
-        resetCounter();
       }
       else if (prxdownlinkMessage->fport == cmdPort && prxdownlinkMessage->data[0] == setTimeCmd && prxdownlinkMessage->length == 5)
       {
@@ -450,7 +393,6 @@ void handleMqttMsgTask(void *parameter)
     // Pend on new message in queue and forward it to the corresponding handler
     if (xQueueReceive(mqttQueue, &(prxMqttMessage), portMAX_DELAY))
     {
-      Serial.println("handleMqttMsgTask running on core: " + xPortGetCoreID());
       Serial.println("Received mqttQueue");
 
       // vPortFree(prxMqttMessage);
