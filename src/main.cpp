@@ -78,7 +78,37 @@ void forwardMqttToQueue(const char *topic, const char *payload)
   String nodeName = mqtt.get_topic_element(topic, 1);
   Serial.printf("topic: '%s'\npayload: %s\nnodeName: %s\n", topic, payload, nodeName);
 
-  if (nodeName == "CO2")
+  if (nodeName == "TRACER")
+  {
+    tracerStruct *tracerPayload = (tracerStruct *)pvPortMalloc(sizeof(tracerStruct));
+    if (tracerPayload == NULL)
+    {
+      Serial.println(F("Failed to allocate heap memory for tracerPayload."));
+    }
+    else
+    {
+      DynamicJsonDocument doc(1024);
+      deserializeJson(doc, payload);
+      tracerStruct tempTracerPayload = parseTracerStruct(doc, 1337);
+      memcpy(tracerPayload, &tempTracerPayload, sizeof(tracerStruct));
+
+      Serial.println("Enqueuing tracer telemetry for uplink.");
+
+      linkMessage *ptxuplinkMessage = (linkMessage *)pvPortMalloc(sizeof(linkMessage));
+      if (ptxuplinkMessage == NULL)
+      {
+        Serial.println(F("Failed to allocate heap memory for ptxuplinkMessage."));
+      }
+      else
+      {
+        ptxuplinkMessage->fport = 12;
+        ptxuplinkMessage->length = sizeof(tracerStruct);
+        ptxuplinkMessage->data = (uint8_t *)tracerPayload;
+        xQueueSend(uplinkQueue, &ptxuplinkMessage, (TickType_t)0);
+      }
+    }
+  }
+  else if (nodeName == "CO2")
   {
 
     co2Struct *co2Payload = (co2Struct *)pvPortMalloc(sizeof(co2Struct));
@@ -136,6 +166,8 @@ void setup()
   WiFi.softAP("LOPY_0001");
 #elif defined(DEV4)
   WiFi.softAP("LOPY_0002");
+#elif defined(BOARD_TBEAM)
+  WiFi.softAP("LUDWIG", "apfelkuchen");
   if (!MDNS.begin("ludwig"))
     Serial.println("Error setting up MDNS responder!");
 #else
