@@ -66,6 +66,25 @@ struct meter
     uint32_t t;
 };`;
 
+const co2Struct = `
+struct co2
+{
+    uint16_t co2;
+    uint16_t illuminance;
+    uint32_t t;
+    uint16_t counter;
+};`;
+
+const gpsStruct = `
+struct gpsStruct
+{
+    double latitude;
+    double longitude;
+    double altitude;
+    uint32_t t;
+    uint16_t counter;
+};`;
+
 // Parses a C struct as an object with name and members with names and types
 function getStructObject(structString) {
   const regex = /struct\s+(\w+)\s*\{((?:\s*\w+\s+\w+\s*;\s*)+)\};?/;
@@ -119,6 +138,14 @@ function decodeUplink(input) {
   } else if (input.fPort == 13) {
     data = {
       ...decodeStructObject(getStructObject(meterStruct), input.bytes),
+    };
+  } else if (input.fPort == 14) {
+    data = {
+      ...decodeStructObject(getStructObject(co2Struct), input.bytes),
+    };
+  } else if (input.fPort == 15) {
+    data = {
+      ...decodeStructObject(getStructObject(gpsStruct), input.bytes),
     };
   } else {
     warnings.push("Unsupported fPort");

@@ -42,11 +42,15 @@ extern U8X8_SSD1306_128X64_NONAME_HW_I2C display;
 #endif
 
 // Forward declarations
-static void doWorkCallback(osjob_t *job);
-void processWork(ostime_t timestamp);
+// static void doWorkCallback(osjob_t *job);
+void processWork(ostime_t doWorkJobTimeStamp, uint16_t counterValue);
 void processDownlink(ostime_t eventTimestamp, uint8_t fPort, uint8_t *data, uint8_t dataLength);
 void onLmicEvent(void *pUserData, ev_t ev);
 void setupLmic(void);
+int16_t getSnrTenfold(void);
+int16_t getRssi(int8_t snr);
+lmic_tx_error_t scheduleUplink(uint8_t fPort, uint8_t *data, uint8_t dataLength, bool confirmed);
+extern bool joined;
 
 #ifndef DO_WORK_INTERVAL_SECONDS     // Should be set in platformio.ini
 #define DO_WORK_INTERVAL_SECONDS 300 // Default 5 minutes if not set

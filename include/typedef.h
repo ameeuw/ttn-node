@@ -1,7 +1,7 @@
 #ifndef typedef_h
 #define typedef_h
 
-struct tracer
+struct tracerStruct
 {
     float batteryTemperature;
     float batterySoc;
@@ -21,7 +21,7 @@ struct tracer
     uint32_t t;
 };
 
-struct meter
+struct meterStruct
 {
     float batteryVoltage;
     float loadPower;
@@ -29,6 +29,43 @@ struct meter
     uint32_t t;
     uint16_t counter;
 };
+
+struct co2Struct
+{
+    uint16_t co2;
+    uint16_t illuminance;
+    uint32_t t;
+    uint16_t counter;
+};
+
+struct gpsStruct
+{
+    double latitude;
+    double longitude;
+    double altitude;
+    uint32_t t;
+    uint16_t counter;
+};
+
+typedef struct qMessage
+{
+    uint8_t id;
+    uint8_t length;
+    char payload[50];
+} qMessage;
+
+typedef struct linkMessage
+{
+    uint8_t fport;
+    uint8_t *data;
+    uint8_t length;
+} linkMessage;
+
+typedef struct mqttMessage
+{
+    String topic;
+    String payload;
+} mqttMessage;
 
 #include "../keyfiles/lorawan-keys.h"
 
