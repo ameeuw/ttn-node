@@ -5,15 +5,50 @@ bool joined = false;
 linkMessage downlinkMessage;
 QueueHandle_t downlinkQueue = xQueueCreate(10, sizeof(struct linkMessage *));
 
+// Helper function to convert ASCII hex string to byte value.
+u1_t ASCII2Hex(const char str[2])
+{
+    unsigned char ASCII = 0;
+    // High Nibble
+    if (str[0] >= 'A' && str[0] <= 'F')
+        ASCII = str[0] - 'A' + 10;
+    else if (str[0] >= 'a' && str[0] <= 'f')
+        ASCII = str[0] - 'a' + 10;
+    else
+        ASCII = str[0] - '0';
+    ASCII <<= 4;
+    // Low Nibble
+    if (str[1] >= 'A' && str[1] <= 'F')
+        ASCII |= str[1] - 'A' + 10;
+    else if (str[1] >= 'a' && str[1] <= 'f')
+        ASCII |= str[1] - 'a' + 10;
+    else
+        ASCII |= str[1] - '0';
+    return ASCII;
+}
+
 // Set LoRaWAN keys defined in lorawan-keys.h.
 #ifdef OTAA_ACTIVATION
-static const u1_t PROGMEM DEVEUI[8] = {OTAA_DEVEUI};
-static const u1_t PROGMEM APPEUI[8] = {OTAA_APPEUI};
-static const u1_t PROGMEM APPKEY[16] = {OTAA_APPKEY};
+const char DEVEUI[] = ASCII_DEVEUI;
+const char APPEUI[] = ASCII_APPEUI;
+const char APPKEY[] = ASCII_APPKEY;
+
 // Below callbacks are used by LMIC for reading above values.
-void os_getDevEui(u1_t *buf) { memcpy_P(buf, DEVEUI, 8); }
-void os_getArtEui(u1_t *buf) { memcpy_P(buf, APPEUI, 8); }
-void os_getDevKey(u1_t *buf) { memcpy_P(buf, APPKEY, 16); }
+void os_getDevEui(u1_t *buf)
+{
+    for (uint8_t i = 0; i < 8; ++i)
+        buf[i] = ASCII2Hex(&DEVEUI[(7 - i) * 2]);
+}
+void os_getArtEui(u1_t *buf)
+{
+    for (uint8_t i = 0; i < 8; ++i)
+        buf[i] = ASCII2Hex(&APPEUI[(7 - i) * 2]);
+}
+void os_getDevKey(u1_t *buf)
+{
+    for (uint8_t i = 0; i < 16; ++i)
+        buf[i] = ASCII2Hex(&APPKEY[i * 2]);
+}
 #else
 // ABP activation
 static const u4_t DEVADDR = ABP_DEVADDR;
