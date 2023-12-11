@@ -4,7 +4,11 @@ This code holds the functionality to keep a collection of nodes based on Tasmota
 The uplink and downlink is realised via LoRaWAN (TheThingsNetwork TTN), local connectivity is handled by 
 PicoMQTT and time synchronisation is achieved via GPS.
 
-The process is divided into multiple tasks which either act on incoming events or work off queues
+The process is divided into multiple tasks which either act on incoming events or work off queues.
+
+
+The LoRaWAN code is heavily based on the LMIC-Node project which seems to be the one-fits-all-solution to anything LoRaWAN.
+It is reduced and extended to be processed by FreeRTOS and adds queue-workers for both sides.
 
 ### Hardware
 Lopy v1
@@ -40,3 +44,4 @@ TTGO T-Beam V1.2
 - Change key management to be equivalent to ttn mapper style
 - Forward LMIC events via MQTT
 - Reboot or reconnect on lost LMIC connection
+- Retry failed scheduleUplink calls

@@ -1,8 +1,5 @@
 #include "lmic-node.h"
 
-void processWork(ostime_t doWorkJobTimeStamp, uint16_t counterValue);
-void sendCounterValue(uint16_t counterValue);
-
 bool joined = false;
 
 linkMessage downlinkMessage;
@@ -183,14 +180,7 @@ void onEvent(ev_t ev)
         // max TX size, it is not used in this example.
         LMIC_setLinkCheckMode(0);
 
-        // The doWork job has probably run already (while
-        // the node was still joining) and have rescheduled itself.
-        // Cancel the next scheduled doWork job and re-schedule
-        // for immediate execution to prevent that any uplink will
-        // have to wait until the current doWork interval ends.
-        // os_clearCallback(&doWorkJob);
-        // os_setCallback(&doWorkJob, doWorkCallback);
-
+        // Set joined flag to prevent rejoining again and again.
         Serial.println("EV_JOINED EVENT!");
         joined = true;
 
@@ -254,8 +244,6 @@ void onEvent(ev_t ev)
 
 lmic_tx_error_t scheduleUplink(uint8_t fPort, uint8_t *data, uint8_t dataLength, bool confirmed = false)
 {
-    // This function is called from the processWork() function to schedule
-    // transmission of an uplink message that was prepared by processWork().
     // Transmission will be performed at the next possible time
 
     ostime_t timestamp = os_getTime();
@@ -290,75 +278,6 @@ lmic_tx_error_t scheduleUplink(uint8_t fPort, uint8_t *data, uint8_t dataLength,
 #endif
     }
     return retval;
-}
-
-void processWork(ostime_t doWorkJobTimeStamp, uint16_t counterValue)
-{
-    // This function is called from the doWorkCallback()
-    // callback function when the doWork job is executed.
-
-    // Uses globals: payloadBuffer and LMIC data structure.
-
-    // This is where the main work is performed like
-    // reading sensor and GPS data and schedule uplink
-    // messages if anything needs to be transmitted.
-
-    // Skip processWork if using OTAA and still joining.
-    if (LMIC.devaddr != 0)
-    {
-        // Collect input data.
-        // For simplicity LMIC-node uses a counter to simulate a sensor.
-        // The counter is increased automatically by getCounterValue()
-        // and can be reset with a 'reset counter' command downlink message.
-
-        ostime_t timestamp = os_getTime();
-
-#ifdef USE_DISPLAY
-        // Interval and Counter values are combined on a single row.
-        // This allows to keep the 3rd row empty which makes the
-        // information better readable on the small display.
-        display.clearLine(INTERVAL_ROW);
-        display.setCursor(COL_0, INTERVAL_ROW);
-        display.print(" Ctr:");
-        display.print(counterValue);
-#endif
-#ifdef USE_SERIAL
-        printEvent(timestamp, "Input data collected", PrintTarget::Serial);
-        printSpaces(serial, MESSAGE_INDENT);
-        serial.print(F("COUNTER value: "));
-        serial.println(counterValue);
-#endif
-
-        // For simplicity LMIC-node will try to send an uplink
-        // message every time processWork() is executed.
-
-        // Schedule uplink message if possible
-        if (LMIC.opmode & OP_TXRXPEND)
-        {
-// TxRx is currently pending, do not send.
-#ifdef USE_SERIAL
-            printEvent(timestamp, "Uplink not scheduled because TxRx pending", PrintTarget::Serial);
-#endif
-#ifdef USE_DISPLAY
-            printEvent(timestamp, "UL not scheduled", PrintTarget::Display);
-#endif
-        }
-        else
-        {
-            sendCounterValue(counterValue);
-        }
-    }
-}
-
-void sendCounterValue(uint16_t counterValue)
-{
-    // Prepare uplink payload.
-    uint8_t payloadBuffer[4];
-    payloadBuffer[0] = counterValue >> 8;
-    payloadBuffer[1] = counterValue & 0xFF;
-    uint8_t fPort = 10;
-    uint8_t payloadLength = 2;
-    scheduleUplink(fPort, payloadBuffer, payloadLength);
 }
 
 void processDownlink(ostime_t txCompleteTimestamp, uint8_t fPort, uint8_t *data, uint8_t dataLength)
