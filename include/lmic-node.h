@@ -113,8 +113,8 @@ const char deviceId[] = DEVICEID_DEFAULT;
 #endif
 
 #ifdef OTAA_ACTIVATION
-#if !defined(OTAA_DEVEUI) || !defined(OTAA_APPEUI) || !defined(OTAA_APPKEY)
-#error One or more LoRaWAN keys (OTAA_DEVEUI, OTAA_APPEUI, OTAA_APPKEY) are not defined.
+#if !defined(ASCII_DEVEUI) || !defined(ASCII_APPEUI) || !defined(ASCII_APPKEY)
+#error One or more LoRaWAN keys (ASCII_DEVEUI, ASCII_APPEUI, ASCII_APPKEY) are not defined.
 #endif
 #else
 // ABP activation
