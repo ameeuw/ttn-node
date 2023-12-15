@@ -44,6 +44,7 @@ struct gpsStruct
     double latitude;
     double longitude;
     double altitude;
+    double speed;
     int32_t t;
     uint16_t counter;
 };

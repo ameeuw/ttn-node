@@ -104,7 +104,7 @@ void handlePayloadAndQueueUplink(const char *payload, uint8_t fport)
   }
 }
 
-void forwardMqttToQueue(const char *topic, const char *payload)
+void handleMqttUplink(const char *topic, const char *payload)
 {
   String nodeName = mqtt.get_topic_element(topic, 1);
   Serial.printf("topic: '%s'\npayload: %s\nnodeName: %s\n", topic, payload, nodeName);
@@ -130,7 +130,7 @@ void forwardMqttToQueue(const char *topic, const char *payload)
 void initMqtt()
 {
   // Subscribe to a topic and attach a callback
-  mqtt.subscribe("tele/+/SENSOR", forwardMqttToQueue);
+  mqtt.subscribe("tele/+/SENSOR", handleMqttUplink);
   mqtt.begin();
 }
 
@@ -321,6 +321,81 @@ void handleDownlinkMsgTask(void *parameter)
   }
 }
 
+void updateGPS(uint16_t counter)
+{
+  setup_gps();
+  int gpsStatus = getGPS();
+  if (gpsStatus == 0)
+    axp_gps(1); // give GPS more volt to get a fix
+  else
+    axp_gps(2); // turn down voltage for GPS to save energy
+
+  if (gpsStatus == 1)
+  {
+    // Set Time from GPS data
+    setTime(
+        gps.time.hour(),
+        gps.time.minute(),
+        gps.time.second(),
+        gps.date.day(),
+        gps.date.month(),
+        gps.date.year());
+    // Calc current Time Zone time by offset value
+    adjustTime(UTC_offset * SECS_PER_HOUR);
+
+    gpsStruct *gpsPayload = (gpsStruct *)pvPortMalloc(sizeof(gpsStruct));
+    if (gpsPayload == NULL)
+    {
+      Serial.println(F("Failed to allocate heap memory for gpsPayload."));
+    }
+    else
+    {
+      gpsPayload->latitude = gps.location.lat();
+      gpsPayload->longitude = gps.location.lng();
+      gpsPayload->altitude = gps.altitude.meters();
+      gpsPayload->speed = gps.speed.kmph();
+      gpsPayload->t = now();
+      gpsPayload->counter = counter;
+
+      Serial.print("Enqueuing gps telemetry for uplink.");
+#ifdef DEBUG
+      Serial.println("T: " + String(gpsPayload->t));
+      Serial.println("Latitude: " + String(gpsPayload->latitude));
+      Serial.println("Longitude: " + String(gpsPayload->longitude));
+      Serial.println("Altitude: " + String(gpsPayload->altitude));
+      Serial.println("Counter: " + String(gpsPayload->counter));
+#endif
+
+      linkMessage *ptxuplinkMessage = (linkMessage *)pvPortMalloc(sizeof(linkMessage));
+      if (ptxuplinkMessage == NULL)
+      {
+        Serial.println(F("Failed to allocate heap memory for ptxuplinkMessage."));
+      }
+      else
+      {
+        ptxuplinkMessage->fport = 15;
+        ptxuplinkMessage->length = sizeof(gpsStruct);
+        ptxuplinkMessage->data = (uint8_t *)gpsPayload;
+        xQueueSend(uplinkQueue, &ptxuplinkMessage, (TickType_t)0);
+      }
+    }
+  }
+  else
+  {
+    Serial.println("No GPS");
+  }
+}
+
+void updateNodeTime()
+{
+  String nodes[] = {"TRACER", "CO2", "COOLBOX"};
+  for (String node : nodes)
+  {
+    String topic = "cmnd/" + node + "/time";
+    mqtt.publish(topic, String(now()));
+  }
+}
+
 void printStatusMsgTask(void *parameter)
 {
   const TickType_t xDelay = 30000 / portTICK_PERIOD_MS;
@@ -346,76 +421,8 @@ void printStatusMsgTask(void *parameter)
 
     if (counter % 6 == 0)
     {
-
-      setup_gps();
-      int gpsStatus = getGPS();
-      if (gpsStatus == 0)
-        axp_gps(1); // give GPS more volt to get a fix
-      else
-        axp_gps(2); // turn down voltage for GPS to save energy
-
-      if (gpsStatus == 1)
-      {
-        int Year = gps.date.year();
-        byte Month = gps.date.month();
-        byte Day = gps.date.day();
-        byte Hour = gps.time.hour();
-        byte Minute = gps.time.minute();
-        byte Second = gps.time.second();
-
-        // Set Time from GPS data string
-        setTime(Hour, Minute, Second, Day, Month, Year);
-        // Calc current Time Zone time by offset value
-        adjustTime(UTC_offset * SECS_PER_HOUR);
-
-        String nodes[] = {"TRACER", "CO2", "COOLBOX"};
-
-        for (String node : nodes)
-        {
-          String topic = "cmnd/" + node + "/time";
-          mqtt.publish(topic, String(now()));
-        }
-
-        gpsStruct *gpsPayload = (gpsStruct *)pvPortMalloc(sizeof(gpsStruct));
-        if (gpsPayload == NULL)
-        {
-          Serial.println(F("Failed to allocate heap memory for gpsPayload."));
-        }
-        else
-        {
-          gpsPayload->latitude = gps.location.lat();
-          gpsPayload->longitude = gps.location.lng();
-          gpsPayload->altitude = gps.altitude.meters();
-          gpsPayload->t = now();
-          gpsPayload->counter = counter;
-
-          Serial.print("Enqueuing gps telemetry for uplink.");
-#ifdef DEBUG
-          Serial.println("T: " + String(gpsPayload->t));
-          Serial.println("Latitude: " + String(gpsPayload->latitude));
-          Serial.println("Longitude: " + String(gpsPayload->longitude));
-          Serial.println("Altitude: " + String(gpsPayload->altitude));
-          Serial.println("Counter: " + String(gpsPayload->counter));
-#endif
-
-          linkMessage *ptxuplinkMessage = (linkMessage *)pvPortMalloc(sizeof(linkMessage));
-          if (ptxuplinkMessage == NULL)
-          {
-            Serial.println(F("Failed to allocate heap memory for ptxuplinkMessage."));
-          }
-          else
-          {
-            ptxuplinkMessage->fport = 15;
-            ptxuplinkMessage->length = sizeof(gpsStruct);
-            ptxuplinkMessage->data = (uint8_t *)gpsPayload;
-            xQueueSend(uplinkQueue, &ptxuplinkMessage, (TickType_t)0);
-          }
-        }
-      }
-      else
-      {
-        Serial.println("No GPS");
-      }
+      updateGPS(counter);
+      updateNodeTime();
     }
     counter++;
 
