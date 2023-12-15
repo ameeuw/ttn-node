@@ -21,83 +21,90 @@ const dataTypes = {
   uint16_t: { length: 16, getter: "getUint16" },
   uint32_t: { length: 32, getter: "getUint32" },
   uint64_t: { length: 64, getter: "getUint64" },
+  "static constexpr uint8_t": { length: 8, getter: "getUint8" },
 };
 
 const telemetryStruct = `
-  struct telemetry
-  {
-    float temp;
-    float hum;
-    float voltage;
-    float current;
-    float power;
-    uint16_t counter;
-    uint32_t t;
-  };`;
+struct telemetry
+{
+  float temp;
+  float hum;
+  float voltage;
+  float current;
+  float power;
+  uint16_t counter;
+  uint32_t t;
+};`;
 
 const tracerStruct = `
 struct tracerStruct
 {
-    float batteryTemperature;
-    float batterySoc;
-    float batteryVoltage;
-    float batteryCurrent;
-    float pvVoltage;
-    float pvCurrent;
-    float pvPower;
-    float loadVoltage;
-    float loadCurrent;
-    float loadPower;
-    float consumptionDay;
-    float consumptionSum;
-    float productionSum;
-    float batteryMaxVoltage;
-    int32_t t;
-    uint16_t counter;
+  float batteryTemperature;
+  float batterySoc;
+  float batteryVoltage;
+  float batteryCurrent;
+  float pvVoltage;
+  float pvCurrent;
+  float pvPower;
+  float loadVoltage;
+  float loadCurrent;
+  float loadPower;
+  float consumptionDay;
+  float consumptionSum;
+  float productionSum;
+  float batteryMaxVoltage;
+  int32_t t;
+  uint16_t counter;
+  static constexpr uint8_t fport = 12;
 };`;
 
 const meterStruct = `
 struct meterStruct
 {
-    float batteryVoltage;
-    float loadPower;
-    float consumptionSum;
-    int32_t t;
-    uint16_t counter;
+  float batteryVoltage;
+  float loadPower;
+  float consumptionSum;
+  int32_t t;
+  uint16_t counter;
+  static constexpr uint8_t fport = 13;
 };`;
 
 const co2Struct = `
 struct co2Struct
 {
-    uint16_t co2;
-    uint16_t illuminance;
-    int32_t t;
-    uint16_t counter;
+  uint16_t co2;
+  uint16_t illuminance;
+  int32_t t;
+  uint16_t counter;
+  static constexpr uint8_t fport = 14;
 };`;
 
 const gpsStruct = `
 struct gpsStruct
 {
-    double latitude;
-    double longitude;
-    double altitude;
-    int32_t t;
-    uint16_t counter;
+  double latitude;
+  double longitude;
+  double altitude;
+  double speed;
+  int32_t t;
+  uint16_t counter;
+  static constexpr uint8_t fport = 15;
 };`;
 
 const coolboxStruct = `
 struct coolboxStruct
 {
-    float inflowTemperature;
-    float outflowTemperature;
-    uint16_t flowCounter;
-    uint16_t tec1Current;
-    uint16_t tec2Current;
-    float waterTemperature;
-    float airTemperature;
-    float humidity;
-    int32_t t;
-    uint16_t counter;
+  float inflowTemperature;
+  float outflowTemperature;
+  uint16_t flowCounter;
+  uint16_t tec1Current;
+  uint16_t tec2Current;
+  float waterTemperature;
+  float airTemperature;
+  float humidity;
+  int32_t t;
+  uint16_t counter;
+  static constexpr uint8_t fport = 16;
 };`;
 
 const fportMapping = {

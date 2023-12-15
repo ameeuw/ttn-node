@@ -96,7 +96,7 @@ void handlePayloadAndQueueUplink(const char *payload)
     }
     else
     {
-      ptxuplinkMessage->fport = TypeTag<T>::fport;
+      ptxuplinkMessage->fport = T::fport;
       ptxuplinkMessage->length = sizeof(T);
       ptxuplinkMessage->data = (uint8_t *)uplinkPayload;
       xQueueSend(uplinkQueue, &ptxuplinkMessage, (TickType_t)0);

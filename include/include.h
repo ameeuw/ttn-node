@@ -37,6 +37,7 @@ RTC_DS1307 rtc;
 */
 #include <typedef.h>
 #include BSFILE // Include Board Support File
+#include "../keyfiles/lorawan-keys.h"
 
 /*
 **************************************************
