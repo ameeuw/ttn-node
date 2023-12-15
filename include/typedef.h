@@ -2,6 +2,19 @@
 #define typedef_h
 
 // Payload structs
+
+struct telemetry
+{
+    float temp;
+    float hum;
+    float voltage;
+    float current;
+    float power;
+    uint16_t counter;
+    uint32_t t;
+    static constexpr uint8_t fport = 11;
+};
+
 struct tracerStruct
 {
     float batteryTemperature;
