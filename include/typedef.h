@@ -1,6 +1,11 @@
 #ifndef typedef_h
 #define typedef_h
 
+template <typename T>
+struct TypeTag
+{
+};
+
 // Payload structs
 struct tracerStruct
 {
@@ -21,6 +26,11 @@ struct tracerStruct
     int32_t t;
     uint16_t counter;
 };
+template <>
+struct TypeTag<tracerStruct>
+{
+    static constexpr uint8_t fport = 12;
+};
 
 struct meterStruct
 {
@@ -31,12 +41,23 @@ struct meterStruct
     uint16_t counter;
 };
 
+template <>
+struct TypeTag<meterStruct>
+{
+    static constexpr uint8_t fport = 13;
+};
+
 struct co2Struct
 {
     uint16_t co2;
     uint16_t illuminance;
     int32_t t;
     uint16_t counter;
+};
+template <>
+struct TypeTag<co2Struct>
+{
+    static constexpr uint8_t fport = 14;
 };
 
 struct gpsStruct
@@ -47,6 +68,11 @@ struct gpsStruct
     double speed;
     int32_t t;
     uint16_t counter;
+};
+template <>
+struct TypeTag<gpsStruct>
+{
+    static constexpr uint8_t fport = 15;
 };
 
 struct coolboxStruct
@@ -61,6 +87,11 @@ struct coolboxStruct
     float humidity;
     int32_t t;
     uint16_t counter;
+};
+template <>
+struct TypeTag<coolboxStruct>
+{
+    static constexpr uint8_t fport = 16;
 };
 
 // Message queue stucts

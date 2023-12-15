@@ -74,7 +74,7 @@ void initTasks(void)
 }
 
 template <typename T>
-void handlePayloadAndQueueUplink(const char *payload, uint8_t fport)
+void handlePayloadAndQueueUplink(const char *payload)
 {
   T *uplinkPayload = (T *)pvPortMalloc(sizeof(T));
   if (uplinkPayload == NULL)
@@ -96,7 +96,7 @@ void handlePayloadAndQueueUplink(const char *payload, uint8_t fport)
     }
     else
     {
-      ptxuplinkMessage->fport = fport;
+      ptxuplinkMessage->fport = TypeTag<T>::fport;
       ptxuplinkMessage->length = sizeof(T);
       ptxuplinkMessage->data = (uint8_t *)uplinkPayload;
       xQueueSend(uplinkQueue, &ptxuplinkMessage, (TickType_t)0);
@@ -111,15 +111,15 @@ void handleMqttUplink(const char *topic, const char *payload)
 
   if (nodeName == "TRACER")
   {
-    handlePayloadAndQueueUplink<tracerStruct>(payload, 13);
+    handlePayloadAndQueueUplink<tracerStruct>(payload);
   }
   else if (nodeName == "CO2")
   {
-    handlePayloadAndQueueUplink<co2Struct>(payload, 14);
+    handlePayloadAndQueueUplink<co2Struct>(payload);
   }
   else if (nodeName == "COOLBOX")
   {
-    handlePayloadAndQueueUplink<tracerStruct>(payload, 16);
+    handlePayloadAndQueueUplink<tracerStruct>(payload);
   }
   else
   {
@@ -351,7 +351,7 @@ void updateGPS(uint16_t counter)
         ", \"altitude\": " + String(gps.altitude.meters()) +
         ", \"speed\": " + String(gps.speed.kmph()) +
         "}";
-    handlePayloadAndQueueUplink<gpsStruct>(gpsPayload.c_str(), 15);
+    handlePayloadAndQueueUplink<gpsStruct>(gpsPayload.c_str());
   }
   else
   {

@@ -72,7 +72,7 @@ void collect(uint16_t counterValue)
                     Serial.print("Sending tracer telemetry at t=");
                     Serial.print(tracerPayload.t);
                     Serial.println(" ms");
-                    uint8_t fPort = 12;
+                    uint8_t fPort = TypeTag<tracerStruct>::fport;
                     // scheduleUplink(fPort, (uint8_t *)&tracerPayload, sizeof(tracerPayload));
                 }
                 else if (status.containsKey("meter"))
@@ -81,7 +81,7 @@ void collect(uint16_t counterValue)
                     Serial.print("Sending meter telemetry at t=");
                     Serial.print(meterPayload.t);
                     Serial.println(" ms");
-                    uint8_t fPort = 13;
+                    uint8_t fPort = TypeTag<meterStruct>::fport;
                     // scheduleUplink(fPort, (uint8_t *)&meterPayload, sizeof(meterPayload));
                 }
                 else
