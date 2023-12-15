@@ -14,6 +14,7 @@
 #include <ESPmDNS.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
+#include <TinyGPS++.h>
 
 #ifdef USE_RTC
 #include "RTClib.h"

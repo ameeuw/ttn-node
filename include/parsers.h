@@ -5,5 +5,4 @@
 
 template <typename T>
 T parseStruct(DynamicJsonDocument doc, uint16_t counterValue);
-
 #endif

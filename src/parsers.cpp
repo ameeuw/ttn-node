@@ -64,3 +64,16 @@ coolboxStruct parseStruct<coolboxStruct>(DynamicJsonDocument doc, uint16_t count
         counterValue,
     };
 }
+
+template <>
+gpsStruct parseStruct<gpsStruct>(DynamicJsonDocument doc, uint16_t counterValue)
+{
+    return (gpsStruct){
+        doc["latitude"],
+        doc["longitude"],
+        doc["altitude"],
+        doc["speed"],
+        now(),
+        counterValue,
+    };
+}

@@ -143,7 +143,7 @@ void setup()
 #elif defined(DEV4)
   WiFi.softAP("LOPY_0002");
 #elif defined(BOARD_TBEAM)
-  WiFi.softAP("LUDWIG", WIFI_PASSWORD, NULL, NULL, 10);
+  WiFi.softAP("LUDWIG", WIFI_PASSWORD, 12, false, 10);
   if (!MDNS.begin("ludwig"))
     Serial.println("Error setting up MDNS responder!");
 #else
@@ -326,9 +326,11 @@ void updateGPS(uint16_t counter)
   setup_gps();
   int gpsStatus = getGPS();
   if (gpsStatus == 0)
-    axp_gps(1); // give GPS more volt to get a fix
+    // Increase voltage for GPS to get a fix
+    axp_gps(1);
   else
-    axp_gps(2); // turn down voltage for GPS to save energy
+    // Reduce voltage for GPS to save power
+    axp_gps(2);
 
   if (gpsStatus == 1)
   {
@@ -340,45 +342,16 @@ void updateGPS(uint16_t counter)
         gps.date.day(),
         gps.date.month(),
         gps.date.year());
-    // Calc current Time Zone time by offset value
+    // Adjust to Time Zone time by offset value
     adjustTime(UTC_offset * SECS_PER_HOUR);
 
-    gpsStruct *gpsPayload = (gpsStruct *)pvPortMalloc(sizeof(gpsStruct));
-    if (gpsPayload == NULL)
-    {
-      Serial.println(F("Failed to allocate heap memory for gpsPayload."));
-    }
-    else
-    {
-      gpsPayload->latitude = gps.location.lat();
-      gpsPayload->longitude = gps.location.lng();
-      gpsPayload->altitude = gps.altitude.meters();
-      gpsPayload->speed = gps.speed.kmph();
-      gpsPayload->t = now();
-      gpsPayload->counter = counter;
-
-      Serial.print("Enqueuing gps telemetry for uplink.");
-#ifdef DEBUG
-      Serial.println("T: " + String(gpsPayload->t));
-      Serial.println("Latitude: " + String(gpsPayload->latitude));
-      Serial.println("Longitude: " + String(gpsPayload->longitude));
-      Serial.println("Altitude: " + String(gpsPayload->altitude));
-      Serial.println("Counter: " + String(gpsPayload->counter));
-#endif
-
-      linkMessage *ptxuplinkMessage = (linkMessage *)pvPortMalloc(sizeof(linkMessage));
-      if (ptxuplinkMessage == NULL)
-      {
-        Serial.println(F("Failed to allocate heap memory for ptxuplinkMessage."));
-      }
-      else
-      {
-        ptxuplinkMessage->fport = 15;
-        ptxuplinkMessage->length = sizeof(gpsStruct);
-        ptxuplinkMessage->data = (uint8_t *)gpsPayload;
-        xQueueSend(uplinkQueue, &ptxuplinkMessage, (TickType_t)0);
-      }
-    }
+    String gpsPayload =
+        "{\"latitude\": " + String(gps.location.lat()) +
+        ", \"longitude\": " + String(gps.location.lng()) +
+        ", \"altitude\": " + String(gps.altitude.meters()) +
+        ", \"speed\": " + String(gps.speed.kmph()) +
+        "}";
+    handlePayloadAndQueueUplink<gpsStruct>(gpsPayload.c_str(), 15);
   }
   else
   {
