@@ -85,12 +85,28 @@ struct gpsStruct
     uint16_t counter;
 };`;
 
+const coolboxStruct = `
+struct coolboxStruct
+{
+    float inflowTemperature;
+    float outflowTemperature;
+    uint16_t flowCounter;
+    uint16_t tec1Current;
+    uint16_t tec2Current;
+    float waterTemperature;
+    float airTemperature;
+    float humidity;
+    int32_t t;
+    uint16_t counter;
+};`;
+
 const fportMapping = {
   11: telemetryStruct,
   12: tracerStruct,
   13: meterStruct,
   14: co2Struct,
   15: gpsStruct,
+  16: coolboxStruct,
 };
 
 // Parses a C struct as an object with name and members with names and types

@@ -48,6 +48,20 @@ struct gpsStruct
     uint16_t counter;
 };
 
+struct coolboxStruct
+{
+    float inflowTemperature;
+    float outflowTemperature;
+    uint16_t flowCounter;
+    uint16_t tec1Current;
+    uint16_t tec2Current;
+    float waterTemperature;
+    float airTemperature;
+    float humidity;
+    int32_t t;
+    uint16_t counter;
+};
+
 // Message queue stucts
 
 typedef struct linkMessage

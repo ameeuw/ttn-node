@@ -44,3 +44,19 @@ co2Struct parseCo2Struct(DynamicJsonDocument doc, uint16_t counterValue)
         counterValue,
     };
 }
+
+coolboxStruct parseCoolboxStruct(DynamicJsonDocument doc, uint16_t counterValue)
+{
+    return (coolboxStruct){
+        doc["ANALOG"]["Temperature1"],
+        doc["ANALOG"]["Temperature2"],
+        doc["COUNTER"]["C1"],
+        doc["ANALOG"]["Range3"],
+        doc["ANALOG"]["Range4"],
+        doc["DS18B20"]["Temperature"],
+        doc["AM2301"]["Temperature"],
+        doc["AM2301"]["Humidity"],
+        now(),
+        counterValue,
+    };
+}

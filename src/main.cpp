@@ -108,6 +108,49 @@ void forwardMqttToQueue(const char *topic, const char *payload)
       }
     }
   }
+  else if (nodeName == "COOLBOX")
+  {
+
+    coolboxStruct *coolboxPayload = (coolboxStruct *)pvPortMalloc(sizeof(coolboxStruct));
+    if (coolboxPayload == NULL)
+    {
+      Serial.println(F("Failed to allocate heap memory for coolboxPayload."));
+    }
+    else
+    {
+      DynamicJsonDocument doc(1024);
+      deserializeJson(doc, payload);
+      coolboxStruct tempCoolboxPayload = parseCoolboxStruct(doc, 1337);
+      memcpy(coolboxPayload, &tempCoolboxPayload, sizeof(co2Struct));
+
+      Serial.println("Enqueuing coolbox telemetry for uplink.");
+#ifdef DEBUG
+      Serial.println("T: " + String(coolboxPayload->t));
+      Serial.println("InflowTemperature: " + String(coolboxPayload->inflowTemperature));
+      Serial.println("OutflowTemperature: " + String(coolboxPayload->outflowTemperature));
+      Serial.println("FlowCounter: " + String(coolboxPayload->flowCounter));
+      Serial.println("Tec1Current: " + String(coolboxPayload->tec1Current));
+      Serial.println("Tec2Current: " + String(coolboxPayload->tec2Current));
+      Serial.println("WaterTemperature: " + String(coolboxPayload->waterTemperature));
+      Serial.println("AirTemperature: " + String(coolboxPayload->airTemperature));
+      Serial.println("Humidity: " + String(coolboxPayload->humidity));
+      Serial.println("Counter: " + String(coolboxPayload->counter));
+#endif
+
+      linkMessage *ptxuplinkMessage = (linkMessage *)pvPortMalloc(sizeof(linkMessage));
+      if (ptxuplinkMessage == NULL)
+      {
+        Serial.println(F("Failed to allocate heap memory for ptxuplinkMessage."));
+      }
+      else
+      {
+        ptxuplinkMessage->fport = 16;
+        ptxuplinkMessage->length = sizeof(coolboxStruct);
+        ptxuplinkMessage->data = (uint8_t *)coolboxPayload;
+        xQueueSend(uplinkQueue, &ptxuplinkMessage, (TickType_t)0);
+      }
+    }
+  }
   else if (nodeName == "CO2")
   {
 
@@ -167,7 +210,7 @@ void setup()
 #elif defined(DEV4)
   WiFi.softAP("LOPY_0002");
 #elif defined(BOARD_TBEAM)
-  WiFi.softAP("LUDWIG", "apfelkuchen");
+  WiFi.softAP("LUDWIG", WIFI_PASSWORD, NULL, NULL, 10);
   if (!MDNS.begin("ludwig"))
     Serial.println("Error setting up MDNS responder!");
 #else
@@ -392,8 +435,13 @@ void printStatusMsgTask(void *parameter)
         // Calc current Time Zone time by offset value
         adjustTime(UTC_offset * SECS_PER_HOUR);
 
-        String topic = "cmnd/CO2/time";
-        mqtt.publish(topic, String(now()));
+        String nodes[] = {"TRACER", "CO2", "COOLBOX"};
+
+        for (String node : nodes)
+        {
+          String topic = "cmnd/" + node + "/time";
+          mqtt.publish(topic, String(now()));
+        }
 
         gpsStruct *gpsPayload = (gpsStruct *)pvPortMalloc(sizeof(gpsStruct));
         if (gpsPayload == NULL)
