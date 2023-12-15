@@ -3,9 +3,7 @@
 
 #include "include.h"
 
-meterStruct parseMeterStruct(DynamicJsonDocument doc, uint16_t counterValue);
-tracerStruct parseTracerStruct(DynamicJsonDocument doc, uint16_t counterValue);
-co2Struct parseCo2Struct(DynamicJsonDocument doc, uint16_t counterValue);
-coolboxStruct parseCoolboxStruct(DynamicJsonDocument doc, uint16_t counterValue);
+template <typename T>
+T parseStruct(DynamicJsonDocument doc, uint16_t counterValue);
 
 #endif

@@ -1,6 +1,7 @@
 #include "include.h"
 
-meterStruct parseMeterStruct(DynamicJsonDocument doc, uint16_t counterValue)
+template <>
+meterStruct parseStruct<meterStruct>(DynamicJsonDocument doc, uint16_t counterValue)
 {
     meterStruct meterPayload = {
         ((float)doc["ANALOG"]["Range"]) / 1000,
@@ -12,7 +13,8 @@ meterStruct parseMeterStruct(DynamicJsonDocument doc, uint16_t counterValue)
     return meterPayload;
 }
 
-tracerStruct parseTracerStruct(DynamicJsonDocument doc, uint16_t counterValue)
+template <>
+tracerStruct parseStruct<tracerStruct>(DynamicJsonDocument doc, uint16_t counterValue)
 {
     tracerStruct tracerPayload = {
         doc["TRACER"]["batteryTemperature"],
@@ -35,7 +37,8 @@ tracerStruct parseTracerStruct(DynamicJsonDocument doc, uint16_t counterValue)
     return tracerPayload;
 }
 
-co2Struct parseCo2Struct(DynamicJsonDocument doc, uint16_t counterValue)
+template <>
+co2Struct parseStruct<co2Struct>(DynamicJsonDocument doc, uint16_t counterValue)
 {
     return (co2Struct){
         doc["S8"]["CarbonDioxide"],
@@ -45,7 +48,8 @@ co2Struct parseCo2Struct(DynamicJsonDocument doc, uint16_t counterValue)
     };
 }
 
-coolboxStruct parseCoolboxStruct(DynamicJsonDocument doc, uint16_t counterValue)
+template <>
+coolboxStruct parseStruct<coolboxStruct>(DynamicJsonDocument doc, uint16_t counterValue)
 {
     return (coolboxStruct){
         doc["ANALOG"]["Temperature1"],

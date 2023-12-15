@@ -68,7 +68,7 @@ void collect(uint16_t counterValue)
                 const JsonObject status = doc["StatusSNS"];
                 if (status.containsKey("TRACER"))
                 {
-                    tracerStruct tracerPayload = parseTracerStruct(status, counterValue);
+                    tracerStruct tracerPayload = parseStruct<tracerStruct>(status, counterValue);
                     Serial.print("Sending tracer telemetry at t=");
                     Serial.print(tracerPayload.t);
                     Serial.println(" ms");
@@ -77,7 +77,7 @@ void collect(uint16_t counterValue)
                 }
                 else if (status.containsKey("meter"))
                 {
-                    meterStruct meterPayload = parseMeterStruct(status, counterValue);
+                    meterStruct meterPayload = parseStruct<meterStruct>(status, counterValue);
                     Serial.print("Sending meter telemetry at t=");
                     Serial.print(meterPayload.t);
                     Serial.println(" ms");

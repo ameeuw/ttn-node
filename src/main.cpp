@@ -73,6 +73,37 @@ void initTasks(void)
   );
 }
 
+template <typename T>
+void handlePayloadAndQueueUplink(const char *payload, uint8_t fport)
+{
+  T *uplinkPayload = (T *)pvPortMalloc(sizeof(T));
+  if (uplinkPayload == NULL)
+  {
+    Serial.println(F("Failed to allocate heap memory for uplinkPayload."));
+  }
+  else
+  {
+    DynamicJsonDocument doc(1024);
+    deserializeJson(doc, payload);
+    T tempUplinkPayload = parseStruct<T>(doc, 1337);
+    memcpy(uplinkPayload, &tempUplinkPayload, sizeof(T));
+    Serial.println("Enqueuing telemetry for uplink.");
+
+    linkMessage *ptxuplinkMessage = (linkMessage *)pvPortMalloc(sizeof(linkMessage));
+    if (ptxuplinkMessage == NULL)
+    {
+      Serial.println(F("Failed to allocate heap memory for ptxuplinkMessage."));
+    }
+    else
+    {
+      ptxuplinkMessage->fport = fport;
+      ptxuplinkMessage->length = sizeof(T);
+      ptxuplinkMessage->data = (uint8_t *)uplinkPayload;
+      xQueueSend(uplinkQueue, &ptxuplinkMessage, (TickType_t)0);
+    }
+  }
+}
+
 void forwardMqttToQueue(const char *topic, const char *payload)
 {
   String nodeName = mqtt.get_topic_element(topic, 1);
@@ -80,113 +111,15 @@ void forwardMqttToQueue(const char *topic, const char *payload)
 
   if (nodeName == "TRACER")
   {
-    tracerStruct *tracerPayload = (tracerStruct *)pvPortMalloc(sizeof(tracerStruct));
-    if (tracerPayload == NULL)
-    {
-      Serial.println(F("Failed to allocate heap memory for tracerPayload."));
-    }
-    else
-    {
-      DynamicJsonDocument doc(1024);
-      deserializeJson(doc, payload);
-      tracerStruct tempTracerPayload = parseTracerStruct(doc, 1337);
-      memcpy(tracerPayload, &tempTracerPayload, sizeof(tracerStruct));
-
-      Serial.println("Enqueuing tracer telemetry for uplink.");
-
-      linkMessage *ptxuplinkMessage = (linkMessage *)pvPortMalloc(sizeof(linkMessage));
-      if (ptxuplinkMessage == NULL)
-      {
-        Serial.println(F("Failed to allocate heap memory for ptxuplinkMessage."));
-      }
-      else
-      {
-        ptxuplinkMessage->fport = 12;
-        ptxuplinkMessage->length = sizeof(tracerStruct);
-        ptxuplinkMessage->data = (uint8_t *)tracerPayload;
-        xQueueSend(uplinkQueue, &ptxuplinkMessage, (TickType_t)0);
-      }
-    }
-  }
-  else if (nodeName == "COOLBOX")
-  {
-
-    coolboxStruct *coolboxPayload = (coolboxStruct *)pvPortMalloc(sizeof(coolboxStruct));
-    if (coolboxPayload == NULL)
-    {
-      Serial.println(F("Failed to allocate heap memory for coolboxPayload."));
-    }
-    else
-    {
-      DynamicJsonDocument doc(1024);
-      deserializeJson(doc, payload);
-      coolboxStruct tempCoolboxPayload = parseCoolboxStruct(doc, 1337);
-      memcpy(coolboxPayload, &tempCoolboxPayload, sizeof(co2Struct));
-
-      Serial.println("Enqueuing coolbox telemetry for uplink.");
-#ifdef DEBUG
-      Serial.println("T: " + String(coolboxPayload->t));
-      Serial.println("InflowTemperature: " + String(coolboxPayload->inflowTemperature));
-      Serial.println("OutflowTemperature: " + String(coolboxPayload->outflowTemperature));
-      Serial.println("FlowCounter: " + String(coolboxPayload->flowCounter));
-      Serial.println("Tec1Current: " + String(coolboxPayload->tec1Current));
-      Serial.println("Tec2Current: " + String(coolboxPayload->tec2Current));
-      Serial.println("WaterTemperature: " + String(coolboxPayload->waterTemperature));
-      Serial.println("AirTemperature: " + String(coolboxPayload->airTemperature));
-      Serial.println("Humidity: " + String(coolboxPayload->humidity));
-      Serial.println("Counter: " + String(coolboxPayload->counter));
-#endif
-
-      linkMessage *ptxuplinkMessage = (linkMessage *)pvPortMalloc(sizeof(linkMessage));
-      if (ptxuplinkMessage == NULL)
-      {
-        Serial.println(F("Failed to allocate heap memory for ptxuplinkMessage."));
-      }
-      else
-      {
-        ptxuplinkMessage->fport = 16;
-        ptxuplinkMessage->length = sizeof(coolboxStruct);
-        ptxuplinkMessage->data = (uint8_t *)coolboxPayload;
-        xQueueSend(uplinkQueue, &ptxuplinkMessage, (TickType_t)0);
-      }
-    }
+    handlePayloadAndQueueUplink<tracerStruct>(payload, 13);
   }
   else if (nodeName == "CO2")
   {
-
-    co2Struct *co2Payload = (co2Struct *)pvPortMalloc(sizeof(co2Struct));
-    if (co2Payload == NULL)
-    {
-      Serial.println(F("Failed to allocate heap memory for co2Payload."));
-    }
-    else
-    {
-      DynamicJsonDocument doc(1024);
-      deserializeJson(doc, payload);
-      co2Struct tempCo2Payload = parseCo2Struct(doc, 1337);
-      memcpy(co2Payload, &tempCo2Payload, sizeof(co2Struct));
-
-      Serial.println("Enqueuing co2 telemetry for uplink.");
-#ifdef DEBUG
-      Serial.println("T: " + String(co2Payload->t));
-      Serial.println("CO2: " + String(co2Payload->co2));
-      Serial.println("Illuminance: " + String(co2Payload->illuminance));
-      Serial.println("Counter: " + String(co2Payload->counter));
-#endif
-
-      linkMessage *ptxuplinkMessage = (linkMessage *)pvPortMalloc(sizeof(linkMessage));
-      if (ptxuplinkMessage == NULL)
-      {
-        Serial.println(F("Failed to allocate heap memory for ptxuplinkMessage."));
-      }
-      else
-      {
-        ptxuplinkMessage->fport = 14;
-        ptxuplinkMessage->length = sizeof(co2Struct);
-        ptxuplinkMessage->data = (uint8_t *)co2Payload;
-        xQueueSend(uplinkQueue, &ptxuplinkMessage, (TickType_t)0);
-      }
-    }
+    handlePayloadAndQueueUplink<co2Struct>(payload, 14);
+  }
+  else if (nodeName == "COOLBOX")
+  {
+    handlePayloadAndQueueUplink<tracerStruct>(payload, 16);
   }
   else
   {
