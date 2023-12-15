@@ -1,4 +1,5 @@
-const decodeUplink = require("./uplink-formatters");
+const { decodeUplink } = require("./base-uplink-formatters");
+const parsedStructs = require("./parsed-structs.json");
 
 function assertObjectEquality(actual, expected) {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -35,7 +36,7 @@ const payloads = {
 };
 
 for (const [name, { payload, parsed }] of Object.entries(payloads)) {
-  const actual = decodeUplink(payload);
+  const actual = decodeUplink(payload, parsedStructs);
   console.log("- testing", name);
   assertObjectEquality(actual, parsed);
 }
