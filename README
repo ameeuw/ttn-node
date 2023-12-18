@@ -1,0 +1,63 @@
+### TTGO T-BEAM LMIC-Node
+
+This code holds the functionality to keep a collection of nodes based on Tasmota working without internet.
+The uplink and downlink is realised via LoRaWAN (TheThingsNetwork TTN), local connectivity is handled by 
+PicoMQTT and time synchronisation is achieved via GPS.
+
+The process is divided into multiple tasks which either act on incoming events or work off queues.
+
+
+The LoRaWAN code is heavily based on the LMIC-Node project which seems to be the one-fits-all-solution to anything LoRaWAN.
+It is reduced and extended to be processed by FreeRTOS and adds queue-workers for both sides.
+
+### Hardware
+Lopy v1
+TTGO Lora32
+TTGO T-Beam V1.2
+
+### Tasks
+- HandleUplinkMessage
+- HandleDownloadMessage
+  
+### Queues
+- UplinkQueue
+- DownlinkQueue
+
+### PicoMQTT
+### Tasmota Registry
+
+
+### Registry functionality
+Available nodes post on `tasmota/discovery/<MAC>/config` with payload:
+
+{"ip":"192.168.2.196","dn":"Tasmota","fn":["Tasmota",null,null,null,null,null,null,null],"hn":"tasmota-80FF6D-8045","mac":"E0980680FF6D","md":"Generic","ty":0,"if":0,"ofln":"Offline","onln":"Online","state":["OFF","ON","TOGGLE","HOLD"],"sw":"13.3.0.1","t":"tasmota_80FF6D","ft":"%prefix%/%topic%/","tp":["cmnd","stat","tele"],"rl":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"swc":[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],"swn":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"btn":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"so":{"4":0,"11":0,"13":0,"17":0,"20":0,"30":0,"68":0,"73":0,"82":0,"114":0,"117":0},"lk":0,"lt_st":0,"bat":0,"dslp":0,"sho":[],"sht":[],"ver":1}
+
+### Todos
+- Set UPLINK frequency via rule or berry
+  - ON Time#Minute|15 DO status 8 ENDON
+- Keep list of registered devices
+- Scan for known sensors and anticipate payloads
+- Unify struct parser as template for payload structs (DONE)
+- Automatically export payload formatter using script (DONE)
+- Map structs to fport (DONE)
+- Sync time from GPS (DONE)
+- Update time on list of nodes via MQTT (DONE)
+- Set teleperiod on registered devices (might be unnecessary)
+- Move to tele/+/UPLINK topic to uncouple uplinks from tele messages
+- Unqueue double messages
+- Add prioritisation to linkMessages
+- Check memory allocation and freeing
+- Add back DISTANCE MOVED
+- Forward Downlink messages to MQTT (DONE)
+- Confirm sending of downlink messages via uplink message
+- Change key management to be equivalent to ttn mapper style (DONE)
+- Forward LMIC events via MQTT
+- Forward LMIC events to main application
+- Reboot or reconnect on lost LMIC connection
+- Retry failed scheduleUplink calls
+- Status Website served on captive portal
+  - Last GPS coordinate (maybe even on map?)
+  - Current time
+  - Links to connected clients with host name, ip address
+  - Status of Task heaps
+- OTA functionality
