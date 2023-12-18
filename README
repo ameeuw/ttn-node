@@ -35,7 +35,8 @@ Available nodes post on `tasmota/discovery/<MAC>/config` with payload:
 ### Todos
 - Set UPLINK frequency via rule or berry
   - ON Time#Minute|15 DO status 8 ENDON
-- Keep list of registered devices (DONE, untested)
+- Keep registry of discovered tasmota nodes (DONE)
+- Keep registry of connected wifi clients (DONE)
 - Scan for known sensors and anticipate payloads
 - Unify struct parser as template for payload structs (DONE)
 - Automatically export payload formatter using script (DONE)
@@ -43,7 +44,7 @@ Available nodes post on `tasmota/discovery/<MAC>/config` with payload:
 - Sync time from GPS (DONE)
 - Update time on list of nodes via MQTT (DONE)
 - Set teleperiod on registered devices (might be unnecessary)
-- Move to tele/+/UPLINK topic to uncouple uplinks from tele messages (probably sensor8 topic)
+- Move to tele/+/UPLINK topic to uncouple uplinks from tele messages (probably ´SENSOR8` topic)
 - Unqueue double messages
 - Add prioritisation to linkMessages
 - Check memory allocation and freeing
