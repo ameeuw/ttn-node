@@ -4,8 +4,8 @@ TaskHandle_t MqttTask;
 
 PicoMQTT::Server mqtt;
 
-// Node registry
-std::map<String, tasmotaNode> nodeRegistry;
+// Tasmota Node registry
+std::map<String, tasmotaNode> tasmotaRegistry;
 
 void handleMqttUplink(const char *topic, const char *payload)
 {
@@ -35,7 +35,7 @@ void discoveryCallback(const char *topic, const char *payload)
     String mac = mqtt.get_topic_element(topic, 2);
     Serial.printf("Received config in topic '%s' (nodeMac = '%s'): %s\n", topic, mac.c_str(), payload);
 
-    if (nodeRegistry.find(mac.c_str()) != nodeRegistry.end())
+    if (tasmotaRegistry.find(mac.c_str()) != tasmotaRegistry.end())
     {
         Serial.println("Found node");
     }
@@ -48,7 +48,7 @@ void discoveryCallback(const char *topic, const char *payload)
         String ip = doc["ip"];
         String topic = doc["t"];
         tasmotaNode node = {hostname, ip, topic};
-        nodeRegistry[mac.c_str()] = node;
+        tasmotaRegistry[mac.c_str()] = node;
     }
 }
 
@@ -82,10 +82,43 @@ void mqttTask(void *parameter)
 
 void updateNodeTime()
 {
-    for (auto const &pair : nodeRegistry)
+    for (auto const &pair : tasmotaRegistry)
     {
         String topic = "cmnd/" + pair.second.topic + "/time";
         Serial.printf("Publishing time to %s\n", topic.c_str());
         mqtt.publish(topic, String(now()));
     }
+}
+
+void publishStatusMessage()
+{
+    updateClientRegistry();
+    String topic = "ludwig/stats";
+    DynamicJsonDocument doc(1024);
+    doc["tasks"]["MqttTask"] = uxTaskGetStackHighWaterMark(MqttTask);
+    doc["tasks"]["LmicTask"] = uxTaskGetStackHighWaterMark(LmicTask);
+    doc["tasks"]["HandleUplinkMsgTask"] = uxTaskGetStackHighWaterMark(HandleUplinkMsgTask);
+    doc["tasks"]["HandleDownlinkMsgTask"] = uxTaskGetStackHighWaterMark(HandleDownlinkMsgTask);
+#ifdef USE_RTC
+    DateTime now = rtc.now();
+    doc["Time"] = now.timestamp(DateTime::TIMESTAMP_FULL);
+#else
+    doc["Time"] = now();
+#endif
+    for (auto const &pair : tasmotaRegistry)
+    {
+        doc["registry"]["tasmota"][pair.first.c_str()]["hostname"] = pair.second.hostname;
+        doc["registry"]["tasmota"][pair.first.c_str()]["ip"] = pair.second.ip;
+        doc["registry"]["tasmota"][pair.first.c_str()]["topic"] = pair.second.topic;
+    }
+    for (auto const &pair : clientRegistry)
+    {
+        doc["registry"]["client"][pair.first.c_str()]["hostname"] = pair.second.hostname;
+        doc["registry"]["client"][pair.first.c_str()]["ip"] = pair.second.ip;
+        doc["registry"]["client"][pair.first.c_str()]["topic"] = pair.second.topic;
+    }
+
+    String message;
+    serializeJson(doc, message);
+    mqtt.publish(topic, message);
 }

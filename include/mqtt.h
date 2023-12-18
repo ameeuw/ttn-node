@@ -7,8 +7,11 @@ template <typename T>
 extern void handlePayloadAndQueueUplink(const char *payload);
 
 extern TaskHandle_t MqttTask;
+extern TaskHandle_t LmicTask;
+void publishStatusMessage();
 
 void mqttTask(void *);
+extern std::map<String, tasmotaNode> tasmotaRegistry;
 
 void initMqtt();
 void handleMqttUplink(const char *topic, const char *payload);

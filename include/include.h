@@ -48,7 +48,7 @@ RTC_DS1307 rtc;
 #include "gps.h"
 #include "utils.h"
 #include "lmic-node.h"
-#include "http_client.h"
+#include "http-helpers.h"
 #include "power.h"
 #include "parsers.h"
 #include "lmic-helpers.h"

@@ -108,21 +108,8 @@ void statusTask(void *parameter)
 
   while (true)
   {
-    String topic = "ludwig/stats";
-    DynamicJsonDocument doc(1024);
-    doc["MqttTask"] = uxTaskGetStackHighWaterMark(MqttTask);
-    doc["LmicTask"] = uxTaskGetStackHighWaterMark(LmicTask);
-    doc["HandleUplinkMsgTask"] = uxTaskGetStackHighWaterMark(HandleUplinkMsgTask);
-    doc["HandleDownlinkMsgTask"] = uxTaskGetStackHighWaterMark(HandleDownlinkMsgTask);
-#ifdef USE_RTC
-    DateTime now = rtc.now();
-    doc["Time"] = now.timestamp(DateTime::TIMESTAMP_FULL);
-#else
-    doc["Time"] = now();
-#endif
-    String message;
-    serializeJson(doc, message);
-    mqtt.publish(topic, message);
+
+    publishStatusMessage();
 
     if (counter % 6 == 0)
     {
