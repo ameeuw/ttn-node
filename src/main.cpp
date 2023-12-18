@@ -1,24 +1,9 @@
 #include <include.h>
 
-const int UTC_offset = 1; // Central European Time
-
-PicoMQTT::Server mqtt;
-
 // Task definitions
 TaskHandle_t LmicTask;
 void lmicTask(void *);
-TaskHandle_t MqttTask;
-void mqttTask(void *);
-TaskHandle_t HandleUplinkMsgTask;
-void handleUplinkMsgTask(void *);
-TaskHandle_t HandleDownlinkMsgTask;
-void handleDownlinkMsgTask(void *parameter);
-void printStatusMsgTask(void *parameter);
-
-// LoRaWAN queues
-extern QueueHandle_t downlinkQueue;
-linkMessage uplinklinkMessage;
-QueueHandle_t uplinkQueue = xQueueCreate(10, sizeof(struct linkMessage *));
+void statusTask(void *parameter);
 
 void initTasks(void)
 {
@@ -33,105 +18,14 @@ void initTasks(void)
   );
 
   xTaskCreatePinnedToCore(
-      mqttTask,    /* Task function. */
-      "MQTT Task", /* String with name of task. */
-      10000,       /* Stack size in words. */
-      NULL,        /* Parameter passed as input of the task */
-      1,           /* Priority of the task. */
-      &MqttTask,   /* Task handle. */
-      1            /* Pinned CPU core. */
+      statusTask,    /* Task function. */
+      "Status Task", /* String with name of task. */
+      10000,         /* Stack size in words. */
+      NULL,          /* Parameter passed as input of the task */
+      1,             /* Priority of the task. */
+      NULL,          /* Task handle. */
+      1              /* Pinned CPU core. */
   );
-
-  xTaskCreatePinnedToCore(
-      handleUplinkMsgTask,  /* Task function. */
-      "Handle Uplink Task", /* String with name of task. */
-      10000,                /* Stack size in words. */
-      NULL,                 /* Parameter passed as input of the task */
-      3,                    /* Priority of the task. */
-      &HandleUplinkMsgTask, /* Task handle. */
-      1                     /* Pinned CPU core. */
-  );
-
-  xTaskCreatePinnedToCore(
-      handleDownlinkMsgTask,  /* Task function. */
-      "Handle Downlink Task", /* String with name of task. */
-      10000,                  /* Stack size in words. */
-      NULL,                   /* Parameter passed as input of the task */
-      2,                      /* Priority of the task. */
-      &HandleDownlinkMsgTask, /* Task handle. */
-      1                       /* Pinned CPU core. */
-  );
-
-  xTaskCreatePinnedToCore(
-      printStatusMsgTask,  /* Task function. */
-      "Print Status Task", /* String with name of task. */
-      10000,               /* Stack size in words. */
-      NULL,                /* Parameter passed as input of the task */
-      1,                   /* Priority of the task. */
-      NULL,                /* Task handle. */
-      1                    /* Pinned CPU core. */
-  );
-}
-
-template <typename T>
-void handlePayloadAndQueueUplink(const char *payload)
-{
-  T *uplinkPayload = (T *)pvPortMalloc(sizeof(T));
-  if (uplinkPayload == NULL)
-  {
-    Serial.println(F("Failed to allocate heap memory for uplinkPayload."));
-  }
-  else
-  {
-    DynamicJsonDocument doc(1024);
-    deserializeJson(doc, payload);
-    T tempUplinkPayload = parseStruct<T>(doc, 1337);
-    memcpy(uplinkPayload, &tempUplinkPayload, sizeof(T));
-    Serial.println("Enqueuing telemetry for uplink.");
-
-    linkMessage *ptxuplinkMessage = (linkMessage *)pvPortMalloc(sizeof(linkMessage));
-    if (ptxuplinkMessage == NULL)
-    {
-      Serial.println(F("Failed to allocate heap memory for ptxuplinkMessage."));
-    }
-    else
-    {
-      ptxuplinkMessage->fport = T::fport;
-      ptxuplinkMessage->length = sizeof(T);
-      ptxuplinkMessage->data = (uint8_t *)uplinkPayload;
-      xQueueSend(uplinkQueue, &ptxuplinkMessage, (TickType_t)0);
-    }
-  }
-}
-
-void handleMqttUplink(const char *topic, const char *payload)
-{
-  String nodeName = mqtt.get_topic_element(topic, 1);
-  Serial.printf("topic: '%s'\npayload: %s\nnodeName: %s\n", topic, payload, nodeName);
-
-  if (nodeName == "TRACER")
-  {
-    handlePayloadAndQueueUplink<tracerStruct>(payload);
-  }
-  else if (nodeName == "CO2")
-  {
-    handlePayloadAndQueueUplink<co2Struct>(payload);
-  }
-  else if (nodeName == "COOLBOX")
-  {
-    handlePayloadAndQueueUplink<tracerStruct>(payload);
-  }
-  else
-  {
-    Serial.println("No parseable data in payload.");
-  }
-}
-
-void initMqtt()
-{
-  // Subscribe to a topic and attach a callback
-  mqtt.subscribe("tele/+/SENSOR", handleMqttUplink);
-  mqtt.begin();
 }
 
 void setup()
@@ -146,8 +40,6 @@ void setup()
   WiFi.softAP("LUDWIG", WIFI_PASSWORD, 12, false, 10);
   if (!MDNS.begin("ludwig"))
     Serial.println("Error setting up MDNS responder!");
-#else
-  WiFi.softAP("MyESP32AP");
 #endif
   serial.begin(115200);
 
@@ -191,6 +83,7 @@ void setup()
 
   setupLmic();
   initMqtt();
+  initHelperTasks();
   initTasks();
 }
 
@@ -208,168 +101,7 @@ void lmicTask(void *parameter)
   }
 }
 
-void mqttTask(void *parameter)
-{
-  const TickType_t xDelay = 10 / portTICK_PERIOD_MS;
-  while (true)
-  {
-    mqtt.loop();
-    vTaskDelay(xDelay);
-  }
-}
-
-void handleUplinkMsgTask(void *parameter)
-{
-  uint8_t count = 0;
-  const TickType_t xDelay = 60000 / portTICK_PERIOD_MS;
-  struct linkMessage *prxuplinkMessage;
-
-  while (true)
-  {
-    UBaseType_t uplinkMessagesWaiting = uxQueueMessagesWaiting(uplinkQueue);
-    Serial.printf("%d uplink(s) waiting...\n", uplinkMessagesWaiting);
-
-    if (joined)
-    {
-      Serial.printf("Working uplinkQueue.\n");
-
-      // Pend on new message in queue and forward it to the corresponding handler
-      if (xQueueReceive(uplinkQueue, &(prxuplinkMessage), portMAX_DELAY))
-      {
-        Serial.println("Got pending uplink message");
-        Serial.printf("fport: %d; length: %d\n", prxuplinkMessage->fport, prxuplinkMessage->length);
-
-        if (LMIC.devaddr != 0)
-        {
-          if (LMIC.opmode & OP_TXRXPEND)
-          {
-            Serial.println("Uplink not scheduled because TxRx pending");
-          }
-          else
-          {
-            scheduleUplink(prxuplinkMessage->fport, prxuplinkMessage->data, prxuplinkMessage->length, false);
-          }
-          count = 0;
-        }
-
-        vPortFree(prxuplinkMessage);
-        vPortFree(prxuplinkMessage->data);
-      }
-    }
-    else
-    {
-      Serial.println("Not joined yet.");
-    }
-
-    vTaskDelay(xDelay);
-  }
-}
-
-void handleDownlinkMsgTask(void *parameter)
-{
-  struct linkMessage *prxdownlinkMessage;
-
-  const uint8_t cmdPort = 100;
-  const uint8_t resetCmd = 0xC0;
-  const uint8_t setTimeCmd = 0xC1;
-
-  while (true)
-  {
-    // Pend on new message in queue and forward it to the corresponding handler
-    if (xQueueReceive(downlinkQueue, &(prxdownlinkMessage), portMAX_DELAY))
-    {
-      Serial.println("Received downlinkQueue");
-      Serial.printf("fport: %d; length: %d\n", prxdownlinkMessage->fport, prxdownlinkMessage->length);
-      Serial.print("payload: ");
-      for (uint8_t i = 0; i < (uint8_t)prxdownlinkMessage->length; i++)
-      {
-        Serial.print(prxdownlinkMessage->data[i]);
-      }
-
-      String topic = "ludwig/downlink";
-      DynamicJsonDocument doc(1024);
-      doc["fport"] = prxdownlinkMessage->fport;
-      doc["length"] = prxdownlinkMessage->length;
-      JsonArray data = doc.createNestedArray("data");
-      for (uint8_t i = 0; i < (uint8_t)prxdownlinkMessage->length; i++)
-      {
-        data.add(prxdownlinkMessage->data[i]);
-      }
-      String message;
-      serializeJson(doc, message);
-      Serial.println(message);
-      mqtt.publish(topic, message);
-
-      Serial.printf("Publishing message in topic '%s': %s\n", topic.c_str(), message.c_str());
-
-      if (prxdownlinkMessage->fport == cmdPort && prxdownlinkMessage->length == 1 && prxdownlinkMessage->data[0] == resetCmd)
-      {
-        serial.println("Reset cmd received.");
-      }
-      else if (prxdownlinkMessage->fport == cmdPort && prxdownlinkMessage->data[0] == setTimeCmd && prxdownlinkMessage->length == 5)
-      {
-        uint32_t unixtime = prxdownlinkMessage->data[1] | (uint32_t)prxdownlinkMessage->data[2] << 8 | (uint32_t)prxdownlinkMessage->data[3] << 16 | (uint32_t)prxdownlinkMessage->data[4] << 24;
-        Serial.printf("Setting RTC to unix time: %d\n", unixtime);
-#ifdef USE_RTC
-        rtc.adjust(unixtime);
-#else
-        setTime(unixtime);
-#endif
-      }
-      vPortFree(prxdownlinkMessage);
-    }
-  }
-}
-
-void updateGPS(uint16_t counter)
-{
-  setup_gps();
-  int gpsStatus = getGPS();
-  if (gpsStatus == 0)
-    // Increase voltage for GPS to get a fix
-    axp_gps(1);
-  else
-    // Reduce voltage for GPS to save power
-    axp_gps(2);
-
-  if (gpsStatus == 1)
-  {
-    // Set Time from GPS data
-    setTime(
-        gps.time.hour(),
-        gps.time.minute(),
-        gps.time.second(),
-        gps.date.day(),
-        gps.date.month(),
-        gps.date.year());
-    // Adjust to Time Zone time by offset value
-    adjustTime(UTC_offset * SECS_PER_HOUR);
-
-    String gpsPayload =
-        "{\"latitude\": " + String(gps.location.lat()) +
-        ", \"longitude\": " + String(gps.location.lng()) +
-        ", \"altitude\": " + String(gps.altitude.meters()) +
-        ", \"speed\": " + String(gps.speed.kmph()) +
-        "}";
-    handlePayloadAndQueueUplink<gpsStruct>(gpsPayload.c_str());
-  }
-  else
-  {
-    Serial.println("No GPS");
-  }
-}
-
-void updateNodeTime()
-{
-  String nodes[] = {"TRACER", "CO2", "COOLBOX"};
-  for (String node : nodes)
-  {
-    String topic = "cmnd/" + node + "/time";
-    mqtt.publish(topic, String(now()));
-  }
-}
-
-void printStatusMsgTask(void *parameter)
+void statusTask(void *parameter)
 {
   const TickType_t xDelay = 30000 / portTICK_PERIOD_MS;
   uint16_t counter = 0;

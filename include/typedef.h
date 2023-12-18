@@ -96,4 +96,11 @@ typedef struct mqttMessage
     String payload;
 } mqttMessage;
 
+struct tasmotaNode
+{
+    String hostname;
+    String ip;
+    String topic;
+};
+
 #endif

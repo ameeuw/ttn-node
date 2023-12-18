@@ -74,6 +74,44 @@ int getGPS()
     return 1; // GPS ok
 }
 
+void updateGPS(uint16_t counter)
+{
+    setup_gps();
+    int gpsStatus = getGPS();
+    if (gpsStatus == 0)
+        // Increase voltage for GPS to get a fix
+        axp_gps(1);
+    else
+        // Reduce voltage for GPS to save power
+        axp_gps(2);
+
+    if (gpsStatus == 1)
+    {
+        // Set Time from GPS data
+        setTime(
+            gps.time.hour(),
+            gps.time.minute(),
+            gps.time.second(),
+            gps.date.day(),
+            gps.date.month(),
+            gps.date.year());
+        // Adjust to Time Zone time by offset value
+        adjustTime(UTC_OFFSET * SECS_PER_HOUR);
+
+        String gpsPayload =
+            "{\"latitude\": " + String(gps.location.lat()) +
+            ", \"longitude\": " + String(gps.location.lng()) +
+            ", \"altitude\": " + String(gps.altitude.meters()) +
+            ", \"speed\": " + String(gps.speed.kmph()) +
+            "}";
+        handlePayloadAndQueueUplink<gpsStruct>(gpsPayload.c_str());
+    }
+    else
+    {
+        Serial.println("No GPS");
+    }
+}
+
 bool gps_valid()
 {
     if (gps.location.isValid() && gps.hdop.isValid() && gps.altitude.isValid() && gps.location.age() <= 1200 && gps.hdop.age() <= 1200 && gps.altitude.age() <= 1200)
@@ -106,34 +144,4 @@ uint8_t gps_geo()
         }
     }
     return 0;
-}
-
-uint8_t location_bin(uint8_t *txBuffer, uint8_t offset)
-{
-    uint32_t LatitudeBinary, LongitudeBinary;
-    uint16_t altitudeGps;
-    uint8_t hdopGps;
-
-    LatitudeBinary = ((gps.location.lat() + 90) / 180) * 16777215;
-    LongitudeBinary = ((gps.location.lng() + 180) / 360) * 16777215;
-
-    txBuffer[offset + 0] = (LatitudeBinary >> 16) & 0xFF;
-    txBuffer[offset + 1] = (LatitudeBinary >> 8) & 0xFF;
-    txBuffer[offset + 2] = LatitudeBinary & 0xFF;
-
-    txBuffer[offset + 3] = (LongitudeBinary >> 16) & 0xFF;
-    txBuffer[offset + 4] = (LongitudeBinary >> 8) & 0xFF;
-    txBuffer[offset + 5] = LongitudeBinary & 0xFF;
-
-    altitudeGps = gps.altitude.meters();
-    txBuffer[offset + 6] = (altitudeGps >> 8) & 0xFF;
-    txBuffer[offset + 7] = altitudeGps & 0xFF;
-
-    if (gps.hdop.isValid())
-        hdopGps = gps.hdop.hdop() * 10;
-    else
-        hdopGps = 144;
-    txBuffer[offset + 8] = hdopGps & 0xFF;
-
-    return offset + 9;
 }

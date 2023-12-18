@@ -51,5 +51,7 @@ RTC_DS1307 rtc;
 #include "http_client.h"
 #include "power.h"
 #include "parsers.h"
+#include "lmic-helpers.h"
+#include "mqtt.h"
 
 #endif

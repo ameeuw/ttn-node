@@ -1,6 +1,7 @@
 #pragma once
 #include <Arduino.h>
 #include <TinyGPS++.h>
+#include "include.h"
 
 #ifdef ESP32
 #include "soc/rtc_cntl_reg.h"
@@ -17,6 +18,8 @@ extern Air530Class serialGPS;
 #else
 extern HardwareSerial serialGPS;
 #endif
+
+#define UTC_OFFSET 1 // Central European Time
 
 #define GPS_RX 34
 #define GPS_TX 12
@@ -37,6 +40,9 @@ const struct Geofence geofence[] = {
     {48.77845, 9.18001, 5000}    // Stuttgart
 };
 
+template <typename T>
+extern void handlePayloadAndQueueUplink(const char *payload);
+
 extern TinyGPSPlus gps;
 
 extern SLEEP_VAR double last_lat;
@@ -46,6 +52,7 @@ void setup_gps();
 void end_gps();
 void gps_loop();
 int getGPS();
+void updateGPS(uint16_t counter);
 bool gps_valid();
 bool gps_moved(int meter);
 uint8_t gps_geo();
