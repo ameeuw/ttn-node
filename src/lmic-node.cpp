@@ -117,9 +117,9 @@ int16_t getRssi(int8_t snr)
     return rssi;
 }
 
-void initLmic(bit_t adrEnabled = 1,
-              dr_t abpDataRate = DefaultABPDataRate,
-              s1_t abpTxPower = DefaultABPTxPower)
+void setupLmic(bit_t adrEnabled = 1,
+               dr_t abpDataRate = DefaultABPDataRate,
+               s1_t abpTxPower = DefaultABPTxPower)
 {
     // ostime_t timestamp = os_getTime();
 
@@ -319,11 +319,6 @@ void processDownlink(ostime_t txCompleteTimestamp, uint8_t fPort, uint8_t *data,
 {
     // This function is called from the onEvent() event handler
     // on EV_TXCOMPLETE when a downlink message was received.
-
-    // Implements a 'reset counter' command that can be sent via a downlink message.
-    // To send the reset counter command to the node, send a downlink message
-    // (e.g. from the TTN Console) with single byte value resetCmd on port cmdPort.
-
     linkMessage *ptxdownlinkMessage = (linkMessage *)pvPortMalloc(sizeof(linkMessage));
     if (ptxdownlinkMessage == NULL)
     {
@@ -342,7 +337,19 @@ void processDownlink(ostime_t txCompleteTimestamp, uint8_t fPort, uint8_t *data,
 //  █ █ ▀▀█ █▀▀ █▀▄   █   █ █ █ █ █▀▀   █▀▀ █ █ █ █
 //  ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀   ▀▀▀ ▀▀▀ ▀▀  ▀▀▀   ▀▀▀ ▀ ▀ ▀▀
 
-void setupLmic()
+TaskHandle_t LmicTask;
+
+void lmicTask(void *parameter)
+{
+    const TickType_t xDelay = 10 / portTICK_PERIOD_MS;
+    while (true)
+    {
+        os_runloop_once();
+        vTaskDelay(xDelay);
+    }
+}
+
+void initLmic()
 {
     // boardInit(InitType::Hardware) must be called at start of setup() before anything else.
     bool hardwareInitSucceeded = boardInit(InitType::Hardware);
@@ -375,10 +382,20 @@ void setupLmic()
         abort();
     }
 
-    initLmic();
+    setupLmic();
 
     if (activationMode == ActivationMode::OTAA)
     {
         LMIC_startJoining();
     }
+
+    xTaskCreatePinnedToCore(
+        lmicTask,    /* Task function. */
+        "LMIC Task", /* String with name of task. */
+        30000,       /* Stack size in words. */
+        NULL,        /* Parameter passed as input of the task */
+        1,           /* Priority of the task. */
+        &LmicTask,   /* Task handle. */
+        1            /* Pinned CPU core. */
+    );
 }

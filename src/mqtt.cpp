@@ -105,18 +105,31 @@ void publishStatusMessage()
 #else
     doc["Time"] = now();
 #endif
+
+    // Tasmota Node registry
     for (auto const &pair : tasmotaRegistry)
     {
         doc["registry"]["tasmota"][pair.first.c_str()]["hostname"] = pair.second.hostname;
         doc["registry"]["tasmota"][pair.first.c_str()]["ip"] = pair.second.ip;
         doc["registry"]["tasmota"][pair.first.c_str()]["topic"] = pair.second.topic;
     }
+    // Wifi Client registry
     for (auto const &pair : clientRegistry)
     {
         doc["registry"]["client"][pair.first.c_str()]["hostname"] = pair.second.hostname;
         doc["registry"]["client"][pair.first.c_str()]["ip"] = pair.second.ip;
         doc["registry"]["client"][pair.first.c_str()]["topic"] = pair.second.topic;
     }
+
+    // Lora Stats
+    doc["lora"]["up"] = LMIC.seqnoUp;
+    doc["lora"]["down"] = LMIC.seqnoDn;
+    int16_t snrTenfold = getSnrTenfold();
+    int8_t snr = snrTenfold / 10;
+    int8_t snrDecimalFraction = snrTenfold % 10;
+    int16_t rssi = getRssi(snr);
+    doc["lora"]["rssi"] = rssi;
+    doc["lora"]["snr"] = float(snr + snrDecimalFraction / 10.0);
 
     String message;
     serializeJson(doc, message);

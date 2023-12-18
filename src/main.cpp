@@ -1,21 +1,10 @@
 #include <include.h>
 
 // Task definitions
-TaskHandle_t LmicTask;
-void lmicTask(void *);
 void statusTask(void *parameter);
 
 void initTasks(void)
 {
-  xTaskCreatePinnedToCore(
-      lmicTask,    /* Task function. */
-      "LMIC Task", /* String with name of task. */
-      30000,       /* Stack size in words. */
-      NULL,        /* Parameter passed as input of the task */
-      1,           /* Priority of the task. */
-      &LmicTask,   /* Task handle. */
-      1            /* Pinned CPU core. */
-  );
 
   xTaskCreatePinnedToCore(
       statusTask,    /* Task function. */
@@ -81,7 +70,7 @@ void setup()
   Serial.println(String("Time:\t") + now.timestamp(DateTime::TIMESTAMP_FULL));
 #endif
 
-  setupLmic();
+  initLmic();
   initMqtt();
   initHelperTasks();
   initTasks();
@@ -89,16 +78,6 @@ void setup()
 
 void loop()
 {
-}
-
-void lmicTask(void *parameter)
-{
-  const TickType_t xDelay = 10 / portTICK_PERIOD_MS;
-  while (true)
-  {
-    os_runloop_once();
-    vTaskDelay(xDelay);
-  }
 }
 
 void statusTask(void *parameter)
