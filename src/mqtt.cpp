@@ -55,7 +55,7 @@ void discoveryCallback(const char *topic, const char *payload)
 void initMqtt()
 {
     // Subscribe to a topic and attach a callback
-    mqtt.subscribe("tele/+/SENSOR", handleMqttUplink);
+    mqtt.subscribe("stat/+/STATUS8", handleMqttUplink);
     mqtt.subscribe("tasmota/discovery/+/config", discoveryCallback);
     mqtt.begin();
 

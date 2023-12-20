@@ -20,7 +20,15 @@ void handlePayloadAndQueueUplink(const char *payload)
     {
         DynamicJsonDocument doc(1024);
         deserializeJson(doc, payload);
-        T tempUplinkPayload = parseStruct<T>(doc, 1337);
+        T tempUplinkPayload;
+        if (doc.containsKey("StatusSNS"))
+        {
+            tempUplinkPayload = parseStruct<T>((JsonObject)doc["StatusSNS"], 1337);
+        }
+        else
+        {
+            tempUplinkPayload = parseStruct<T>(doc, 1337);
+        }
         memcpy(uplinkPayload, &tempUplinkPayload, sizeof(T));
         Serial.println("Enqueuing telemetry for uplink.");
 
