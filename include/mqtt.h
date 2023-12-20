@@ -5,6 +5,7 @@
 
 template <typename T>
 extern void handlePayloadAndQueueUplink(const char *payload);
+void getStatusJson(DynamicJsonDocument &doc);
 
 extern TaskHandle_t MqttTask;
 extern TaskHandle_t LmicTask;

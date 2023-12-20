@@ -14,7 +14,13 @@
 #include <ESPmDNS.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
+
+#ifdef BOARD_TBEAM
 #include <TinyGPS++.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <AsyncElegantOTA.h>
+#endif // BOARD_TBEAM
 
 #ifdef USE_RTC
 #include "RTClib.h"

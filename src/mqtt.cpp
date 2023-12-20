@@ -90,11 +90,9 @@ void updateNodeTime()
     }
 }
 
-void publishStatusMessage()
+void getStatusJson(DynamicJsonDocument &doc)
 {
     updateClientRegistry();
-    String topic = "ludwig/stats";
-    DynamicJsonDocument doc(1024);
     doc["tasks"]["MqttTask"] = uxTaskGetStackHighWaterMark(MqttTask);
     doc["tasks"]["LmicTask"] = uxTaskGetStackHighWaterMark(LmicTask);
     doc["tasks"]["HandleUplinkMsgTask"] = uxTaskGetStackHighWaterMark(HandleUplinkMsgTask);
@@ -130,7 +128,13 @@ void publishStatusMessage()
     int16_t rssi = getRssi(snr);
     doc["lora"]["rssi"] = rssi;
     doc["lora"]["snr"] = float(snr + snrDecimalFraction / 10.0);
+}
 
+void publishStatusMessage()
+{
+    String topic = "ludwig/stats";
+    DynamicJsonDocument doc(1024);
+    getStatusJson(doc);
     String message;
     serializeJson(doc, message);
     mqtt.publish(topic, message);

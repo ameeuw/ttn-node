@@ -1,5 +1,9 @@
 #include <include.h>
 
+#ifdef BOARD_TBEAM
+AsyncWebServer server(80);
+#endif // BOARD_TBEAM
+
 // Task definitions
 void statusTask(void *parameter);
 
@@ -69,6 +73,22 @@ void setup()
   DateTime now = rtc.now();
   Serial.println(String("Time:\t") + now.timestamp(DateTime::TIMESTAMP_FULL));
 #endif
+
+#ifdef BOARD_TBEAM
+  server.on("/status", HTTP_GET, [](AsyncWebServerRequest *request)
+            { 
+              DynamicJsonDocument doc(1024);
+              getStatusJson(doc);
+              String message;
+              serializeJson(doc, message);
+              request->send(200, "text/json", message); });
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+            { 
+              String message = "";
+              request->send(200, "text/plain", message); });
+  AsyncElegantOTA.begin(&server); // Start ElegantOTA
+  server.begin();
+#endif // BOARD_TBEAM
 
   initLmic();
   initMqtt();
