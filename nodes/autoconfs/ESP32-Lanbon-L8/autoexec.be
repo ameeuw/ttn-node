@@ -13,7 +13,7 @@ if f20 != nil stat_line.set_style_text_font(f20, lv.PART_MAIN | lv.STATE_DEFAULT
 stat_line.set_long_mode(lv.LABEL_LONG_SCROLL)                                        # auto scrolling if text does not fit
 stat_line.set_width(hres)
 stat_line.set_align(lv.TEXT_ALIGN_LEFT)                                              # align text left
-stat_line.set_style_bg_color(lv.color(0xD00000), lv.PART_MAIN | lv.STATE_DEFAULT)    # background #000088
+stat_line.set_style_bg_color(lv.color(0xC3433D), lv.PART_MAIN | lv.STATE_DEFAULT)    # background #C3433D (Tasmota Red)
 stat_line.set_style_bg_opa(lv.OPA_COVER, lv.PART_MAIN | lv.STATE_DEFAULT)            # 100% background opacity
 stat_line.set_style_text_color(lv.color(0xFFFFFF), lv.PART_MAIN | lv.STATE_DEFAULT)  # text color #FFFFFF
 stat_line.set_text("L8")
@@ -44,7 +44,7 @@ btn_style_2 = lv.style()
 btn_style_2.set_radius(10)                        # radius of rounded corners
 btn_style_2.set_bg_opa(lv.OPA_COVER)              # 100% background opacity
 if f20 != nil btn_style_2.set_text_font(f20) end  # set font to Montserrat 20
-btn_style_2.set_bg_color(lv.color(0x1ff3ec))      # background color
+btn_style_2.set_bg_color(lv.color(0x6bbf70))      # background #6BBF70 color (Tasmota Green)
 btn_style_2.set_border_color(lv.color(0x0000FF))  # border color #0000FF
 btn_style_2.set_text_color(lv.color(0xFFFFFF))    # text color white #FFFFFF
 
