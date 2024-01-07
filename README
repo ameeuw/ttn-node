@@ -34,7 +34,8 @@ Available nodes post on `tasmota/discovery/<MAC>/config` with payload:
 
 ### Todos
 - Set UPLINK frequency via rule or berry
-  - ON Time#Minute|15 DO status 8 ENDON
+  - rule1 ON Time#Minute|15 DO status 8 ENDON
+  - rule1 1
 - Keep registry of discovered tasmota nodes (DONE)
 - Keep registry of connected wifi clients (DONE)
 - Scan for known sensors and anticipate payloads
@@ -44,7 +45,7 @@ Available nodes post on `tasmota/discovery/<MAC>/config` with payload:
 - Sync time from GPS (DONE)
 - Update time on list of nodes via MQTT (DONE)
 - Set teleperiod on registered devices (might be unnecessary)
-- Move to tele/+/UPLINK topic to uncouple uplinks from tele messages (probably ´SENSOR8` topic)
+- Move to tele/+/UPLINK topic to uncouple uplinks from tele messages (probably ´SENSOR8` topic) (DONE)
 - Unqueue double messages
 - Add prioritisation to linkMessages
 - Check memory allocation and freeing
@@ -56,9 +57,9 @@ Available nodes post on `tasmota/discovery/<MAC>/config` with payload:
 - Forward LMIC events to main application
 - Reboot or reconnect on lost LMIC connection
 - Retry failed scheduleUplink calls
-- Status Website served on captive portal
+- Status Website served on captive portal (copy functionality from ClockClock)
   - Last GPS coordinate (maybe even on map?)
   - Current time
-  - Links to connected clients with host name, ip address
-  - Status of Task heaps
-- OTA functionality
+  - Links to connected clients with host name, ip address (DONE)
+  - Status of Task heaps (DONE)
+- OTA functionality (https://randomnerdtutorials.com/esp32-ota-over-the-air-vs-code/) (DONE)
