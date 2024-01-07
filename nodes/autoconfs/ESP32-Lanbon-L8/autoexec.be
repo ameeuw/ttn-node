@@ -24,7 +24,7 @@ stat_line.refr_pos()                                                            
 wifi_icon = lv_wifi_arcs_icon(stat_line)    # the widget takes care of positioning and driver stuff
 clock_icon = lv_clock_icon(stat_line)
 
-row_y = 60
+row_y = 50
 
 var buttons = []         # relay buttons are added to this list to match with Tasmota relays
 
@@ -75,7 +75,7 @@ def create_button_relay(label, channel)
     button = lv.btn(scr)                                             # create button with main screen as parent
     button.add_flag(lv.OBJ_FLAG_CHECKABLE)                           # create toggle
     button.set_pos(20,row_y)                                         # position of button
-    button.set_size(200, 50)                                         # size of button
+    button.set_size(200, 40)                                         # size of button
     button.add_style(btn_style, lv.PART_MAIN | lv.STATE_DEFAULT)     # style of button
     button.add_style(btn_style_2, lv.PART_MAIN | lv.STATE_CHECKED)   # add checked button style
     button_label = lv.label(button)                                  # create a label as sub-object
@@ -108,8 +108,12 @@ update_buttons_loop()  # start
   
 
 buttons.push(create_button_relay("Relay 1", 0))
-buttons[-1][0].set_y(row_y);
+buttons[-1][0].set_y(row_y)
 buttons.push(create_button_relay("Relay 2", 1))
-buttons[-1][0].set_y(row_y * 2);
+buttons[-1][0].set_y(row_y * 2)
 buttons.push(create_button_relay("Relay 3", 2))
-buttons[-1][0].set_y(row_y * 3);
+buttons[-1][0].set_y(row_y * 3)
+buttons.push(create_button_relay("Ambient", 3))
+buttons[-1][0].set_y(row_y * 4)
+buttons.push(create_button_relay("Screen", 4))
+buttons[-1][0].set_y(row_y * 5)
