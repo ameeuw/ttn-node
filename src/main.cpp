@@ -1,7 +1,10 @@
 #include <include.h>
 
 #ifdef BOARD_TBEAM
-AsyncWebServer server(80);
+#define HTTP_PORT 80
+#define DNS_PORT 53
+DNSServer dnsServer;
+AsyncWebServer server(HTTP_PORT);
 #endif // BOARD_TBEAM
 
 // Task definitions
@@ -75,6 +78,29 @@ void setup()
 #endif
 
 #ifdef BOARD_TBEAM
+  // Initialize SPIFFS
+  if (!SPIFFS.begin(true))
+  {
+    Serial.println("An Error has occurred while mounting SPIFFS");
+  }
+  else
+  {
+    Serial.println("Mounted SPIFFS");
+    File root = SPIFFS.open("/");
+    File file = root.openNextFile();
+    while (file)
+    {
+      Serial.print("FILE: ");
+      Serial.println(file.name());
+      file = root.openNextFile();
+    }
+  }
+  dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
+  server.serveStatic("/", SPIFFS, "/");
+  server.onNotFound([](AsyncWebServerRequest *request)
+                    {
+    Serial.println("NotFound! Serving index.html!");
+    request->send(SPIFFS, "/index.html", "text/html"); });
   server.on("/status", HTTP_GET, [](AsyncWebServerRequest *request)
             { 
               DynamicJsonDocument doc(1024);
@@ -98,6 +124,7 @@ void setup()
 
 void loop()
 {
+  dnsServer.processNextRequest();
 }
 
 void statusTask(void *parameter)

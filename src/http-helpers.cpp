@@ -111,3 +111,7 @@ void collect(uint16_t counterValue)
         }
     }
 }
+
+void setupWeb()
+{
+}

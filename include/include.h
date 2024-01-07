@@ -18,6 +18,8 @@
 #ifdef BOARD_TBEAM
 #include <TinyGPS++.h>
 #include <AsyncTCP.h>
+#include <DNSServer.h>
+#include "FS.h"
 #include <ESPAsyncWebServer.h>
 #include <AsyncElegantOTA.h>
 #endif // BOARD_TBEAM

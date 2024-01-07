@@ -1,0 +1,14 @@
+{
+  "name": "glue-controller-web",
+  "version": "0.1.0",
+  "description": "The webpage for glue controller",
+  "devDependencies": {
+    "del": "^2.0.2",
+    "gulp": "^4.0.2",
+    "gulp-htmlmin": "^3.0.0",
+    "gulp-inline-source": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=0.12.0"
+  }
+}
