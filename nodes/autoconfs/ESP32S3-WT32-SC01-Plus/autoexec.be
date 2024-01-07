@@ -9,7 +9,7 @@ lv.start()
 hres = lv.get_hor_res()       # should be 320
 vres = lv.get_ver_res()       # should be 240
 
-scr = lv.scr_act()            # default screan object
+scr = lv.scr_act()            # default screen object
 f20 = lv.montserrat_font(20)  # load embedded Montserrat 20
 
 #- Upper state line -#
@@ -21,7 +21,7 @@ stat_line.set_align(lv.TEXT_ALIGN_LEFT)                                         
 stat_line.set_style_bg_color(lv.color(0xD00000), lv.PART_MAIN | lv.STATE_DEFAULT)    # background #000088
 stat_line.set_style_bg_opa(lv.OPA_COVER, lv.PART_MAIN | lv.STATE_DEFAULT)            # 100% background opacity
 stat_line.set_style_text_color(lv.color(0xFFFFFF), lv.PART_MAIN | lv.STATE_DEFAULT)  # text color #FFFFFF
-stat_line.set_text("Tasmota")
+stat_line.set_text("Ludwig")
 stat_line.refr_size()                                                                # new in LVGL8
 stat_line.refr_pos()                                                                 # new in LVGL8
 
@@ -228,22 +228,22 @@ def switch_flipped_cb(obj, event)
     var state = obj.get_state() == 3 ? "ON" : "OFF"
     if obj == switch_tec1
         switch = "TEC1"
-        mqtt.publish("cmnd/coolbox_7C72A0/power3", state)
+        mqtt.publish("cmnd/COOLBOX/power3", state)
 
     elif  obj == switch_tec2
         switch = "TEC2"
-        mqtt.publish("cmnd/coolbox_7C72A0/power4", state)
+        mqtt.publish("cmnd/COOLBOX/power4", state)
 
     elif  obj == switch_cycle
         switch = "CYCLE"
-        mqtt.publish("cmnd/coolbox_7C72A0/power2", state)
+        mqtt.publish("cmnd/COOLBOX/power2", state)
 
     elif  obj == switch_radiator
         switch = "RADIATOR"
-        mqtt.publish("cmnd/coolbox_7C72A0/power1", state)
+        mqtt.publish("cmnd/COOLBOX/power1", state)
     end
 
-    mqtt.publish("cmnd/coolbox_7C72A0/state", "")
+    mqtt.publish("cmnd/COOLBOX/state", "")
     print(switch, "switch flipped to ", obj.get_state())
 end
 
@@ -287,7 +287,7 @@ def sensor_callback(topic, idx, payload_s)
     return true
 end
 
-mqtt.subscribe("tele/coolbox_7C72A0/SENSOR", sensor_callback)
+mqtt.subscribe("tele/COOLBOX/SENSOR", sensor_callback)
 
 def status_callback(topic, idx, payload_s)
     var payload = json.load(payload_s)
@@ -322,6 +322,6 @@ def status_callback(topic, idx, payload_s)
     end
 end
 
-mqtt.subscribe("stat/coolbox_7C72A0/RESULT", status_callback)
+mqtt.subscribe("stat/COOLBOX/RESULT", status_callback)
 
-mqtt.publish("cmnd/coolbox_7C72A0/state", "")
+mqtt.publish("cmnd/COOLBOX/state", "")
