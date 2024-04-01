@@ -1,81 +1,55 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8">
-  <title>Clock:Clock DIY</title>
-  <link rel="stylesheet" href="./css/style.css" inline>
-</head>
-<body style="font-family: Arial, Helvetica, sans-serif; background-color: #F8F8F8;" onload="start()">
-<header>
-</header>
-<center>
-  <hr><hr>
-  <div>
-    <svg class="clock"></svg>
-  </div>
-  <hr>
-  <span id="time" style="font-size:128px;font-weight:bold;color:#000000">00:00:00</span>
-  <span id="rtcTime" style="font-size:128px;font-weight:bold;color:#000000">00:00:00</span>
-  <hr><hr>
-  <div>
-    <button class="button" id="set" onclick="client.setTime()">Set Time</button>
-  <hr>
-    <button class="button" id="calibrate" onclick="client.calibrate()">Calibrate Clocks</button>
-  <hr>
-    <button class="button" id="get" onclick="client.getTime()">Get Time</button>
-  <hr>
-    <button class="button" id="random" onclick="client.random()">Random</button>
-  <hr>
-    <button class="button" id="set" onclick="client.set()">Set</button>
-  </div>
-</center>
-<hr><hr>
-<footer>
-</footer>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <title>Node Status Page</title>
+    <link rel="stylesheet" href="./css/style.css" inline />
+  </head>
+  <body
+    style="font-family: Arial, Helvetica, sans-serif; background-color: #f8f8f8"
+    onload="start()"
+  >
+    <header></header>
+    <center>
+      <hr />
+      <hr />
+      <span
+        id="time"
+        style="font-size: 128px; font-weight: bold; color: #000000"
+        >00:00:00</span
+      >
+      <hr />
+      <hr />
+      <textarea
+        id="status"
+        style="font-size: 12px; font-weight: bold; color: #000000"
+      ></textarea>
+      <hr />
+      <div>
+        <button class="button" id="get" onclick="client.update()">
+          Get Status
+        </button>
+      </div>
+    </center>
+    <hr />
+    <hr />
+    <footer></footer>
+  </body>
 </html>
-<script src="./js/snap.svg-min.js" inline></script>
 <script src="./js/client.js" inline></script>
-<script src="./js/master.js" inline></script>
-<script src="./js/clock.js" inline></script>
 <script>
-  let clock = Snap(".clock");
-  let clockMaster = new ClockMaster();
   let client = new Client();
 
   function start() {
-    clockMaster.update();
-    setInterval(()=>{
-      clockMaster.update();
-    }, 10000);
-
-    // clockMaster.muster();
-    // setInterval(()=>{
-    //   clockMaster.muster();
-    // }, 100);
-
     updateTime();
-    setInterval(()=>{
-      updateTime();
-    }, 1000);
-
-    updateRtcTime();
-    setInterval(()=>{
-      updateRtcTime();
-    }, 1000);
+    setInterval(() => {
+      client.update();
+    }, 5000);
   }
 
   function updateTime() {
     var d = new Date();
     var n = d.getTime();
-    document.getElementById('time').innerHTML = d.toLocaleTimeString("de-DE");
-  }
-
-  function updateRtcTime() {
-    if (client.rtcTime != undefined) {
-      var d = new Date(client.rtcTime);
-      document.getElementById('rtcTime').innerHTML = d.toLocaleTimeString("de-DE");
-      client.rtcTime += 1000;
-    }
+    document.getElementById("time").innerHTML = d.toLocaleTimeString("de-DE");
   }
 </script>
