@@ -1,11 +1,9 @@
 #include <include.h>
 
-#ifdef BOARD_TBEAM
 #define HTTP_PORT 80
 #define DNS_PORT 53
 DNSServer dnsServer;
 AsyncWebServer server(HTTP_PORT);
-#endif // BOARD_TBEAM
 
 // Task definitions
 void statusTask(void *parameter);
@@ -36,14 +34,20 @@ void setup()
   WiFi.softAP("LUDWIG", WIFI_PASSWORD, 12, false, 10);
   if (!MDNS.begin("ludwig"))
     Serial.println("Error setting up MDNS responder!");
+#elif defined(BOARD_DEV)
+  WiFi.softAP("conode_dev", NULL, 12, false, 10);
+  if (!MDNS.begin("dev"))
+    Serial.println("Error setting up MDNS responder!");
 #endif
   serial.begin(115200);
 
+#ifdef BOARD_TBEAM
   startup_axp();
   axp_print();
   delay(3000);
   setup_axp();
   end_gps();
+#endif // BOARD_TBEAM
 
 #ifdef USE_RTC
   if (!rtc.begin())
@@ -77,16 +81,15 @@ void setup()
   Serial.println(String("Time:\t") + now.timestamp(DateTime::TIMESTAMP_FULL));
 #endif
 
-#ifdef BOARD_TBEAM
   // Initialize SPIFFS
-  if (!SPIFFS.begin(true))
+  if (!LittleFS.begin(true))
   {
-    Serial.println("An Error has occurred while mounting SPIFFS");
+    Serial.println("LittleFS Mount Failed");
   }
   else
   {
-    Serial.println("Mounted SPIFFS");
-    File root = SPIFFS.open("/");
+    Serial.println("Mounted LittleFS");
+    File root = LittleFS.open("/");
     File file = root.openNextFile();
     while (file)
     {
@@ -96,27 +99,28 @@ void setup()
     }
   }
   dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
-  server.serveStatic("/", SPIFFS, "/");
+  server.serveStatic("/", LittleFS, "/");
   server.onNotFound([](AsyncWebServerRequest *request)
                     {
     Serial.println("NotFound! Serving index.html!");
-    request->send(SPIFFS, "/index.html", "text/html"); });
+    request->send(LittleFS, "/index.html", "text/html"); });
   server.on("/status", HTTP_GET, [](AsyncWebServerRequest *request)
-            { 
+            {
               DynamicJsonDocument doc(1024);
               getStatusJson(doc);
               String message;
               serializeJson(doc, message);
               request->send(200, "text/json", message); });
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-            { 
+            {
               String message = "";
               request->send(200, "text/plain", message); });
-  AsyncElegantOTA.begin(&server); // Start ElegantOTA
+  // AsyncElegantOTA.begin(&server); // Start ElegantOTA
   server.begin();
-#endif // BOARD_TBEAM
 
+#ifndef BOARD_DEV
   initLmic();
+#endif // BOARD_DEV
   initMqtt();
   initHelperTasks();
   initTasks();
@@ -139,7 +143,10 @@ void statusTask(void *parameter)
 
     if (counter % 6 == 0)
     {
+#ifdef BOARD_TBEAM
       updateGPS(counter);
+#endif // BOARD_TBEAM
+
       updateNodeTime();
     }
     counter++;

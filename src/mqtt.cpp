@@ -93,15 +93,41 @@ void updateNodeTime()
 void getStatusJson(DynamicJsonDocument &doc)
 {
     updateClientRegistry();
-    doc["tasks"]["MqttTask"] = uxTaskGetStackHighWaterMark(MqttTask);
-    doc["tasks"]["LmicTask"] = uxTaskGetStackHighWaterMark(LmicTask);
-    doc["tasks"]["HandleUplinkMsgTask"] = uxTaskGetStackHighWaterMark(HandleUplinkMsgTask);
-    doc["tasks"]["HandleDownlinkMsgTask"] = uxTaskGetStackHighWaterMark(HandleDownlinkMsgTask);
+    // volatile UBaseType_t uxArraySize, x;
+    // uint32_t ulTotalRunTime, ulStatsAsPercentage;
+
+    // uxArraySize = uxTaskGetNumberOfTasks();
+    // TaskStatus_t *pxTaskStatusArray = (TaskStatus_t *)pvPortMalloc(uxArraySize * sizeof(TaskStatus_t));
+
+    // uxArraySize = uxTaskGetSystemState(pxTaskStatusArray,
+    //                                    uxArraySize,
+    //                                    &ulTotalRunTime);
+    // ulTotalRunTime /= 100UL;
+
+    // for (uint16_t i = 0; i < uxArraySize; i++)
+    // {
+    //     TaskStatus_t xTaskStatus = pxTaskStatusArray[i];
+    //     ulStatsAsPercentage = xTaskStatus.ulRunTimeCounter / ulTotalRunTime;
+    //     doc["tasks"][xTaskStatus.pcTaskName]["name"] = xTaskStatus.pcTaskName;
+    //     doc["tasks"][xTaskStatus.pcTaskName]["priority"] = xTaskStatus.uxCurrentPriority;
+    //     doc["tasks"][xTaskStatus.pcTaskName]["stack"] = xTaskStatus.usStackHighWaterMark;
+    //     doc["tasks"][xTaskStatus.pcTaskName]["cpu"] = ulStatsAsPercentage;
+    // }
+    // vPortFree(pxTaskStatusArray);
+
+    for (auto task : {MqttTask, LmicTask, HandleUplinkMsgTask, HandleDownlinkMsgTask})
+    {
+        String name = pcTaskGetTaskName(task);
+        doc["tasks"][name]["stack"] = uxTaskGetStackHighWaterMark(task);
+        doc["tasks"][name]["name"] = name;
+        doc["tasks"][name]["priority"] = uxTaskPriorityGet(task);
+    }
+
 #ifdef USE_RTC
     DateTime now = rtc.now();
-    doc["Time"] = now.timestamp(DateTime::TIMESTAMP_FULL);
+    doc["time"] = now.timestamp(DateTime::TIMESTAMP_FULL);
 #else
-    doc["Time"] = now();
+    doc["time"] = now();
 #endif
 
     // Tasmota Node registry
@@ -128,6 +154,41 @@ void getStatusJson(DynamicJsonDocument &doc)
     int16_t rssi = getRssi(snr);
     doc["lora"]["rssi"] = rssi;
     doc["lora"]["snr"] = float(snr + snrDecimalFraction / 10.0);
+
+    // System stats
+    esp_chip_info_t chip_info;
+    esp_chip_info(&chip_info);
+    doc["system"]["features"]["wifi"] = chip_info.features & CHIP_FEATURE_WIFI_BGN;
+    doc["system"]["cores"] = chip_info.cores;
+    doc["system"]["model"] = chip_info.model;
+
+    doc["system"]["program"]["size"] = ESP.getFreeSketchSpace();
+    doc["system"]["program"]["used"] = ESP.getSketchSize();
+
+    doc["system"]["fs"]["size"] = LittleFS.totalBytes();
+    doc["system"]["fs"]["used"] = LittleFS.usedBytes();
+
+    doc["system"]["flash"]["size"] = ESP.getFlashChipSize();
+    doc["system"]["flash"]["speed"] = ESP.getFlashChipSpeed();
+    doc["system"]["flash"]["used"] = LittleFS.usedBytes() + ESP.getSketchSize();
+
+    doc["system"]["heap"]["size"] = ESP.getHeapSize();
+    doc["system"]["heap"]["free"] = esp_get_free_heap_size();
+    doc["system"]["heap"]["minFree"] = esp_get_minimum_free_heap_size();
+    doc["system"]["heap"]["minInternal"] = esp_get_free_internal_heap_size();
+
+    doc["system"]["wakeUpReason"] = esp_sleep_get_wakeup_cause();
+    doc["system"]["resetReason"] = esp_reset_reason();
+
+    doc["system"]["wifi"]["rssi"] = WiFi.RSSI();
+    doc["system"]["wifi"]["mac"] = WiFi.macAddress();
+    doc["system"]["wifi"]["channel"] = WiFi.channel();
+    if (WiFi.status() == WL_CONNECTED)
+        doc["system"]["wifi"]["ip"] = WiFi.localIP().toString();
+
+    doc["system"]["freq"]["cpu"] = getCpuFrequencyMhz();
+    doc["system"]["freq"]["xtal"] = getXtalFrequencyMhz();
+    doc["system"]["freq"]["abp"] = getApbFrequency();
 }
 
 void publishStatusMessage()

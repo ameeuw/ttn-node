@@ -17,12 +17,13 @@
 
 #ifdef BOARD_TBEAM
 #include <TinyGPS++.h>
+#endif // BOARD_TBEAM
 #include <AsyncTCP.h>
 #include <DNSServer.h>
 #include "FS.h"
+#include <LittleFS.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncElegantOTA.h>
-#endif // BOARD_TBEAM
 
 #ifdef USE_RTC
 #include "RTClib.h"

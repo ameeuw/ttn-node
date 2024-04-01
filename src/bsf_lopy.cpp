@@ -1,4 +1,4 @@
-#ifdef BOARD_LOPY
+#if defined(BOARD_LOPY) || defined(BOARD_DEV)
 #include "bsf_lopy.h"
 
 // Pin mappings for LoRa tranceiver
