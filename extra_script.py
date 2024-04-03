@@ -3,6 +3,8 @@ from shutil import copyfile
 import subprocess
 import gzip
 import io
+import os
+import shutil
 
 def write_gzip(file_path):
     in_file = open(file_path, 'rb')
@@ -23,12 +25,12 @@ def compress_html(folder_path, file_name):
 def pre_build_fs_hook(source, target, env):
     print("Running pre_build_fs_hook")
     print("Running gulp")
-    p = subprocess.Popen('cd web && npm run build', shell=True, stdout=subprocess.PIPE)
-    stdout, stderr = p.communicate()
-    #TODO: Make this output realtime
-    for line in stdout.splitlines():
-        line = line.rstrip()
-        print(line)
+
+    # Terrible hack to make sure that the correct node version is used
+    my_env = os.environ.copy()
+    my_env["PATH"] = f"{my_env['HOME']}/.nvm/versions/node/v18.17.1/bin:{my_env['PATH']}"
+
+    subprocess.run('cd web && npm run build', shell=True, env=my_env)
 
     compress_html('./web/dist/', 'index.html')
 
