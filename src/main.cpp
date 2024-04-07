@@ -36,7 +36,7 @@ void setup()
     Serial.println("Error setting up MDNS responder!");
 #elif defined(BOARD_DEV)
   WiFi.softAP("conode_dev", NULL, 12, false, 10);
-  if (!MDNS.begin("dev"))
+  if (!MDNS.begin("ludwig"))
     Serial.println("Error setting up MDNS responder!");
 #endif
   serial.begin(115200);
@@ -99,11 +99,6 @@ void setup()
     }
   }
   dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
-  server.serveStatic("/", LittleFS, "/");
-  server.onNotFound([](AsyncWebServerRequest *request)
-                    {
-    Serial.println("NotFound! Serving index.html!");
-    request->send(LittleFS, "/index.html", "text/html"); });
   server.on("/status", HTTP_GET, [](AsyncWebServerRequest *request)
             {
               DynamicJsonDocument doc(1024);
@@ -115,6 +110,11 @@ void setup()
             {
               String message = "";
               request->send(200, "text/plain", message); });
+  server.serveStatic("/", LittleFS, "/");
+  server.onNotFound([](AsyncWebServerRequest *request)
+                    {
+    Serial.println("NotFound! Serving index.html!");
+    request->send(LittleFS, "/index.html", "text/html"); });
   // AsyncElegantOTA.begin(&server); // Start ElegantOTA
   server.begin();
 
