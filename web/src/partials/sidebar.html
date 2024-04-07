@@ -1,0 +1,55 @@
+<aside
+  :class="sidebarToggle ? 'translate-x-0' : '-translate-x-full'"
+  class="absolute left-0 top-0 z-9999 flex h-screen w-72.5 flex-col overflow-y-hidden bg-black duration-300 ease-linear dark:bg-boxdark lg:static lg:translate-x-0"
+  @click.outside="sidebarToggle = false"
+>
+  <!-- SIDEBAR HEADER -->
+  <div class="flex items-center justify-between gap-2 px-6 py-5.5 lg:py-6.5">
+    <a href="index.html">
+      ESP32 Dashboard
+      <!-- <img src="./images/logo/logo.svg" alt="Logo" /> -->
+    </a>
+
+    <button
+      class="block lg:hidden"
+      @click.stop="sidebarToggle = !sidebarToggle"
+    >
+      <span class="material-icons">arrow_back</span>
+    </button>
+  </div>
+  <!-- SIDEBAR HEADER -->
+
+  <div
+    class="no-scrollbar flex flex-col overflow-y-auto duration-300 ease-linear"
+  >
+    <!-- Sidebar Menu -->
+    <nav
+      class="mt-5 px-4 py-4 lg:mt-9 lg:px-6"
+      x-data="{selected: $persist('System')}"
+    >
+      <!-- Menu Group -->
+      <div>
+        <h3 class="mb-4 ml-4 text-sm font-medium text-bodydark2">MENU</h3>
+
+        <ul class="mb-6 flex flex-col gap-1.5">
+          <!-- Menu Item System -->
+          <li>
+            <a
+              class="group relative flex items-center gap-2.5 rounded-sm px-4 py-2 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4"
+              href="index.html"
+              @click="selected = 'System'"
+              :class="{ 'bg-graydark dark:bg-meta-4': (selected === 'System') || (page === 'system') }"
+            >
+              <span class="material-icons" width="20" height="18"
+                >dashboard</span
+              >
+              System
+            </a>
+          </li>
+          <!-- Menu Item System -->
+        </ul>
+      </div>
+    </nav>
+    <!-- Sidebar Menu -->
+  </div>
+</aside>

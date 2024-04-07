@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ESP32 Dashboard</title>
+  <link rel="icon" href="favicon.ico"><link href="style.css" rel="stylesheet"></head>
+
+  <body
+    x-data="{ page: 'ecommerce', 'loaded': true, 'darkMode': true, 'stickyMenu': false, 'sidebarToggle': false, 'scrollTop': false }"
+    x-init="
+         darkMode = JSON.parse(localStorage.getItem('darkMode'));
+         $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(value)))"
+    :class="{'dark text-bodydark bg-boxdark-2': darkMode === true}"
+  >
+    <!-- ===== Preloader Start ===== -->
+    <div
+  x-show="loaded"
+  x-init="window.addEventListener('DOMContentLoaded', () => {setTimeout(() => loaded = false, 500)})"
+  class="fixed left-0 top-0 z-999999 flex h-screen w-screen items-center justify-center bg-white dark:bg-black"
+>
+  <div
+    class="h-16 w-16 animate-spin rounded-full border-4 border-solid border-primary border-t-transparent"
+  ></div>
+</div>
+
+    <!-- ===== Preloader End ===== -->
+
+    <!-- ===== Page Wrapper Start ===== -->
+    <div class="flex h-screen overflow-hidden">
+      <!-- ===== Sidebar Start ===== -->
+      <aside
+  :class="sidebarToggle ? 'translate-x-0' : '-translate-x-full'"
+  class="absolute left-0 top-0 z-9999 flex h-screen w-72.5 flex-col overflow-y-hidden bg-black duration-300 ease-linear dark:bg-boxdark lg:static lg:translate-x-0"
+  @click.outside="sidebarToggle = false"
+>
+  <!-- SIDEBAR HEADER -->
+  <div class="flex items-center justify-between gap-2 px-6 py-5.5 lg:py-6.5">
+    <a href="index.html">
+      ESP32 Dashboard
+      <!-- <img src="./images/logo/logo.svg" alt="Logo" /> -->
+    </a>
+
+    <button
+      class="block lg:hidden"
+      @click.stop="sidebarToggle = !sidebarToggle"
+    >
+      <span class="material-icons">arrow_back</span>
+    </button>
+  </div>
+  <!-- SIDEBAR HEADER -->
+
+  <div
+    class="no-scrollbar flex flex-col overflow-y-auto duration-300 ease-linear"
+  >
+    <!-- Sidebar Menu -->
+    <nav
+      class="mt-5 px-4 py-4 lg:mt-9 lg:px-6"
+      x-data="{selected: $persist('System')}"
+    >
+      <!-- Menu Group -->
+      <div>
+        <h3 class="mb-4 ml-4 text-sm font-medium text-bodydark2">MENU</h3>
+
+        <ul class="mb-6 flex flex-col gap-1.5">
+          <!-- Menu Item System -->
+          <li>
+            <a
+              class="group relative flex items-center gap-2.5 rounded-sm px-4 py-2 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4"
+              href="index.html"
+              @click="selected = 'System'"
+              :class="{ 'bg-graydark dark:bg-meta-4': (selected === 'System') || (page === 'system') }"
+            >
+              <span class="material-icons" width="20" height="18"
+                >dashboard</span
+              >
+              System
+            </a>
+          </li>
+          <!-- Menu Item System -->
+        </ul>
+      </div>
+    </nav>
+    <!-- Sidebar Menu -->
+  </div>
+</aside>
+
+      <!-- ===== Sidebar End ===== -->
+
+      <!-- ===== Content Area Start ===== -->
+      <div
+        class="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden"
+      >
+        <!-- ===== Header Start ===== -->
+        <header
+  class="sticky top-0 z-999 flex w-full bg-white drop-shadow-1 dark:bg-boxdark dark:drop-shadow-none"
+>
+  <div
+    class="flex flex-grow items-center justify-between px-4 py-4 shadow-2 md:px-6 2xl:px-11"
+  >
+    <div class="flex items-center gap-2 sm:gap-4 lg:hidden">
+      <!-- Hamburger Toggle BTN -->
+      <button
+        class="z-99999 block rounded-sm border border-stroke bg-white p-1.5 shadow-sm dark:border-strokedark dark:bg-boxdark lg:hidden"
+        @click.stop="sidebarToggle = !sidebarToggle"
+      >
+        <span class="relative block h-5.5 w-5.5 cursor-pointer">
+          <span class="du-block absolute right-0 h-full w-full">
+            <span
+              class="relative left-0 top-0 my-1 block h-0.5 w-0 rounded-sm bg-black delay-[0] duration-200 ease-in-out dark:bg-white"
+              :class="{ '!w-full delay-300': !sidebarToggle }"
+            ></span>
+            <span
+              class="relative left-0 top-0 my-1 block h-0.5 w-0 rounded-sm bg-black delay-150 duration-200 ease-in-out dark:bg-white"
+              :class="{ '!w-full delay-400': !sidebarToggle }"
+            ></span>
+            <span
+              class="relative left-0 top-0 my-1 block h-0.5 w-0 rounded-sm bg-black delay-200 duration-200 ease-in-out dark:bg-white"
+              :class="{ '!w-full delay-500': !sidebarToggle }"
+            ></span>
+          </span>
+          <span class="du-block absolute right-0 h-full w-full rotate-45">
+            <span
+              class="absolute left-2.5 top-0 block h-full w-0.5 rounded-sm bg-black delay-300 duration-200 ease-in-out dark:bg-white"
+              :class="{ '!h-0 delay-[0]': !sidebarToggle }"
+            ></span>
+            <span
+              class="delay-400 absolute left-0 top-2.5 block h-0.5 w-full rounded-sm bg-black duration-200 ease-in-out dark:bg-white"
+              :class="{ '!h-0 dealy-200': !sidebarToggle }"
+            ></span>
+          </span>
+        </span>
+      </button>
+      <!-- Hamburger Toggle BTN -->
+      <a class="block flex-shrink-0 lg:hidden" href="index.html">
+        <span class="material-icons" style="font-size: 32px"
+          >developer_board</span
+        >
+      </a>
+    </div>
+
+    <div class="flex items-center gap-3 2xsm:gap-7">
+      <ul class="flex items-center gap-2 2xsm:gap-4">
+        <li>
+          <!-- Dark Mode Toggler -->
+          <label
+            :class="darkMode ? 'bg-primary' : 'bg-stroke'"
+            class="relative m-0 block h-7.5 w-14 rounded-full"
+          >
+            <input
+              type="checkbox"
+              :value="darkMode"
+              @change="darkMode = !darkMode"
+              class="absolute top-0 z-50 m-0 h-full w-full cursor-pointer opacity-0"
+            />
+            <span
+              :class="darkMode && '!right-1 !translate-x-full'"
+              class="absolute left-1 top-1/2 flex h-6 w-6 -translate-y-1/2 translate-x-0 items-center justify-center rounded-full bg-white shadow-switcher duration-75 ease-linear"
+            >
+              <span class="dark:hidden">
+                <span class="material-icons">light_mode</span>
+              </span>
+              <span class="hidden dark:inline-block">
+                <span class="material-icons">dark_mode</span>
+              </span>
+            </span>
+          </label>
+          <!-- Dark Mode Toggler -->
+        </li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+        <!-- ===== Header End ===== -->
+
+        <!-- ===== Main Content Start ===== -->
+        <main>
+          <div class="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">
+            <!-- ====== Cards Features Start -->
+            <div class="mt-4" x-data="{data: $store.featureCards}">
+              <div
+  class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4 2xl:gap-7.5"
+>
+  <template x-for="(card, index) in data.data" :key="index">
+    <!-- Card Item Start -->
+    <div
+      class="rounded-sm border border-stroke bg-white px-7.5 py-6 shadow-default dark:border-strokedark dark:bg-boxdark"
+    >
+      <div
+        class="flex h-11.5 w-11.5 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4"
+      >
+        <span class="material-icons" x-text="card.icon"></span>
+      </div>
+
+      <div class="mt-4 flex items-end justify-between">
+        <div>
+          <h4
+            class="text-title-md font-bold text-black dark:text-white"
+            x-text="card.value"
+          ></h4>
+          <span class="text-sm font-medium" x-text="card.title"></span>
+        </div>
+
+        <span
+          class="flex items-center gap-1 text-sm font-medium text-meta-3"
+          x-text="card.trend"
+        >
+          <svg
+            class="fill-meta-3"
+            width="10"
+            height="11"
+            viewBox="0 0 10 11"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M4.35716 2.47737L0.908974 5.82987L5.0443e-07 4.94612L5 0.0848689L10 4.94612L9.09103 5.82987L5.64284 2.47737L5.64284 10.0849L4.35716 10.0849L4.35716 2.47737Z"
+              fill=""
+            />
+          </svg>
+        </span>
+      </div>
+    </div>
+    <!-- Card Item End -->
+  </template>
+</div>
+
+            </div>
+            <!-- ====== Cards Features End -->
+
+            <!-- ====== Cards Memory Start -->
+            <div class="mt-4" x-data="{data: $store.memoryCards}">
+              <div
+  class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4 2xl:gap-7.5"
+>
+  <template x-for="(card, index) in data.data" :key="index">
+    <!-- Card Item Start -->
+    <div
+      class="rounded-sm border border-stroke bg-white px-7.5 py-6 shadow-default dark:border-strokedark dark:bg-boxdark"
+    >
+      <div
+        class="flex h-11.5 w-11.5 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4"
+      >
+        <span class="material-icons" x-text="card.icon"></span>
+      </div>
+
+      <div class="mt-4 flex items-end justify-between">
+        <div>
+          <h4
+            class="text-title-md font-bold text-black dark:text-white"
+            x-text="card.value"
+          ></h4>
+          <span class="text-sm font-medium" x-text="card.title"></span>
+        </div>
+
+        <span
+          class="flex items-center gap-1 text-sm font-medium text-meta-3"
+          x-text="card.trend"
+        >
+          <svg
+            class="fill-meta-3"
+            width="10"
+            height="11"
+            viewBox="0 0 10 11"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M4.35716 2.47737L0.908974 5.82987L5.0443e-07 4.94612L5 0.0848689L10 4.94612L9.09103 5.82987L5.64284 2.47737L5.64284 10.0849L4.35716 10.0849L4.35716 2.47737Z"
+              fill=""
+            />
+          </svg>
+        </span>
+      </div>
+    </div>
+    <!-- Card Item End -->
+  </template>
+</div>
+
+            </div>
+            <!-- ====== Cards Memory End -->
+
+            <div
+              class="mt-4 grid grid-cols-12 gap-4 md:mt-6 md:gap-6 2xl:mt-7.5 2xl:gap-7.5"
+            >
+              <!-- ====== Table HTTP Registry Start -->
+              <div class="col-span-12 xl:col-span-12">
+                <div
+                  x-data='{data: $store.clientRegistry, title: "HTTP Registry"}'
+                >
+                  <div
+  class="rounded-sm border border-stroke bg-white px-5 pb-2.5 pt-6 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:pb-1"
+>
+  <h4
+    class="mb-6 text-xl font-bold text-black dark:text-white"
+    x-text="title"
+  ></h4>
+
+  <!-- <textarea
+    x-text="JSON.stringify(data, null, 2)"
+    style="width: 100%; height: 200px"
+  ></textarea> -->
+
+  <div class="flex flex-col">
+    <div
+      class="grid grid-cols-3 rounded-sm bg-gray-2 dark:bg-meta-4 sm:grid-cols-4"
+    >
+      <template x-for="header in data.headers">
+        <div class="p-2.5 xl:p-5">
+          <h5
+            class="text-sm font-medium uppercase xsm:text-base"
+            x-text="header"
+          ></h5>
+        </div>
+      </template>
+    </div>
+
+    <template x-for="row in data.rows">
+      <div
+        class="grid grid-cols-3 border-b border-stroke dark:border-strokedark sm:grid-cols-5"
+      >
+        <div class="flex items-center gap-3 p-2.5 xl:p-5">
+          <p
+            class="hidden font-medium text-black dark:text-white sm:block"
+            x-text="row[data.headers[0]]"
+          ></p>
+        </div>
+
+        <div class="flex items-center justify-center p-2.5 xl:p-5">
+          <p
+            class="font-medium text-black dark:text-white"
+            x-text="row[data.headers[1]]"
+          ></p>
+        </div>
+
+        <div class="flex items-center justify-center p-2.5 xl:p-5">
+          <p class="font-medium text-meta-3" x-text="row[data.headers[2]]"></p>
+        </div>
+
+        <div class="hidden items-center justify-center p-2.5 sm:flex xl:p-5">
+          <a
+            class="font-medium text-black dark:text-white"
+            x-bind:href="row[data.headers[3]]"
+            x-text="row[data.headers[3]]"
+          ></a>
+        </div>
+      </div>
+    </template>
+  </div>
+</div>
+
+                </div>
+              </div>
+              <!-- ====== Table HTTP Registry End -->
+
+              <!-- ====== Table Tasmota Registry Start -->
+              <div class="col-span-12 xl:col-span-12">
+                <div
+                  x-data='{data: $store.tasmotaRegistry, title: "Tasmota Registry"}'
+                >
+                  <div
+  class="rounded-sm border border-stroke bg-white px-5 pb-2.5 pt-6 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:pb-1"
+>
+  <h4
+    class="mb-6 text-xl font-bold text-black dark:text-white"
+    x-text="title"
+  ></h4>
+
+  <!-- <textarea
+    x-text="JSON.stringify(data, null, 2)"
+    style="width: 100%; height: 200px"
+  ></textarea> -->
+
+  <div class="flex flex-col">
+    <div
+      class="grid grid-cols-3 rounded-sm bg-gray-2 dark:bg-meta-4 sm:grid-cols-4"
+    >
+      <template x-for="header in data.headers">
+        <div class="p-2.5 xl:p-5">
+          <h5
+            class="text-sm font-medium uppercase xsm:text-base"
+            x-text="header"
+          ></h5>
+        </div>
+      </template>
+    </div>
+
+    <template x-for="row in data.rows">
+      <div
+        class="grid grid-cols-3 border-b border-stroke dark:border-strokedark sm:grid-cols-5"
+      >
+        <div class="flex items-center gap-3 p-2.5 xl:p-5">
+          <p
+            class="hidden font-medium text-black dark:text-white sm:block"
+            x-text="row[data.headers[0]]"
+          ></p>
+        </div>
+
+        <div class="flex items-center justify-center p-2.5 xl:p-5">
+          <p
+            class="font-medium text-black dark:text-white"
+            x-text="row[data.headers[1]]"
+          ></p>
+        </div>
+
+        <div class="flex items-center justify-center p-2.5 xl:p-5">
+          <p class="font-medium text-meta-3" x-text="row[data.headers[2]]"></p>
+        </div>
+
+        <div class="hidden items-center justify-center p-2.5 sm:flex xl:p-5">
+          <a
+            class="font-medium text-black dark:text-white"
+            x-bind:href="row[data.headers[3]]"
+            x-text="row[data.headers[3]]"
+          ></a>
+        </div>
+      </div>
+    </template>
+  </div>
+</div>
+
+                </div>
+              </div>
+              <!-- ====== Table Tasmota Registry End -->
+
+              <!-- ====== Table Task Registry Start -->
+              <div class="col-span-12 xl:col-span-12">
+                <div
+                  x-data='{data: $store.taskRegistry, title: "Task Registry"}'
+                >
+                  <div
+  class="rounded-sm border border-stroke bg-white px-5 pb-2.5 pt-6 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:pb-1"
+>
+  <h4
+    class="mb-6 text-xl font-bold text-black dark:text-white"
+    x-text="title"
+  ></h4>
+
+  <!-- <textarea
+    x-text="JSON.stringify(data, null, 2)"
+    style="width: 100%; height: 200px"
+  ></textarea> -->
+
+  <div class="flex flex-col">
+    <div
+      class="grid grid-cols-3 rounded-sm bg-gray-2 dark:bg-meta-4 sm:grid-cols-4"
+    >
+      <template x-for="header in data.headers">
+        <div class="p-2.5 xl:p-5">
+          <h5
+            class="text-sm font-medium uppercase xsm:text-base"
+            x-text="header"
+          ></h5>
+        </div>
+      </template>
+    </div>
+
+    <template x-for="row in data.rows">
+      <div
+        class="grid grid-cols-3 border-b border-stroke dark:border-strokedark sm:grid-cols-5"
+      >
+        <div class="flex items-center gap-3 p-2.5 xl:p-5">
+          <p
+            class="hidden font-medium text-black dark:text-white sm:block"
+            x-text="row[data.headers[0]]"
+          ></p>
+        </div>
+
+        <div class="flex items-center justify-center p-2.5 xl:p-5">
+          <p
+            class="font-medium text-black dark:text-white"
+            x-text="row[data.headers[1]]"
+          ></p>
+        </div>
+
+        <div class="flex items-center justify-center p-2.5 xl:p-5">
+          <p class="font-medium text-meta-3" x-text="row[data.headers[2]]"></p>
+        </div>
+
+        <div class="hidden items-center justify-center p-2.5 sm:flex xl:p-5">
+          <a
+            class="font-medium text-black dark:text-white"
+            x-bind:href="row[data.headers[3]]"
+            x-text="row[data.headers[3]]"
+          ></a>
+        </div>
+      </div>
+    </template>
+  </div>
+</div>
+
+                </div>
+              </div>
+              <!-- ====== Table Task Registry End -->
+
+              <!-- ====== Chart One Start -->
+              <!-- <div
+  class="col-span-12 rounded-sm border border-stroke bg-white px-5 pb-5 pt-7.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:col-span-8"
+>
+  <div class="flex flex-wrap items-start justify-between gap-3 sm:flex-nowrap">
+    <div class="flex w-full flex-wrap gap-3 sm:gap-5">
+      <div class="flex min-w-47.5">
+        <span
+          class="mr-2 mt-1 flex h-4 w-full max-w-4 items-center justify-center rounded-full border border-primary"
+        >
+          <span
+            class="block h-2.5 w-full max-w-2.5 rounded-full bg-primary"
+          ></span>
+        </span>
+        <div class="w-full">
+          <p class="font-semibold text-primary">Total Revenue</p>
+          <p class="text-sm font-medium">12.04.2022 - 12.05.2022</p>
+        </div>
+      </div>
+      <div class="flex min-w-47.5">
+        <span
+          class="mr-2 mt-1 flex h-4 w-full max-w-4 items-center justify-center rounded-full border border-secondary"
+        >
+          <span
+            class="block h-2.5 w-full max-w-2.5 rounded-full bg-secondary"
+          ></span>
+        </span>
+        <div class="w-full">
+          <p class="font-semibold text-secondary">Total Sales</p>
+          <p class="text-sm font-medium">12.04.2022 - 12.05.2022</p>
+        </div>
+      </div>
+    </div>
+    <div class="flex w-full max-w-45 justify-end">
+      <div
+        class="inline-flex items-center rounded-md bg-whiter p-1.5 dark:bg-meta-4"
+      >
+        <button
+          class="rounded bg-white px-3 py-1 text-xs font-medium text-black shadow-card hover:bg-white hover:shadow-card dark:bg-boxdark dark:text-white dark:hover:bg-boxdark"
+        >
+          Day
+        </button>
+        <button
+          class="rounded px-3 py-1 text-xs font-medium text-black hover:bg-white hover:shadow-card dark:text-white dark:hover:bg-boxdark"
+        >
+          Week
+        </button>
+        <button
+          class="rounded px-3 py-1 text-xs font-medium text-black hover:bg-white hover:shadow-card dark:text-white dark:hover:bg-boxdark"
+        >
+          Month
+        </button>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div id="chartOne" class="-ml-5"></div>
+  </div>
+</div>
+ -->
+              <!-- ====== Chart One End -->
+
+              <!-- ====== Chart Two Start -->
+              <!-- <div
+  class="col-span-12 rounded-sm border border-stroke bg-white p-7.5 shadow-default dark:border-strokedark dark:bg-boxdark xl:col-span-4"
+>
+  <div class="mb-4 justify-between gap-4 sm:flex">
+    <div>
+      <h4 class="text-xl font-bold text-black dark:text-white">
+        Profit this week
+      </h4>
+    </div>
+    <div>
+      <div class="relative z-20 inline-block">
+        <select
+          name="#"
+          id="#"
+          class="relative z-20 inline-flex appearance-none bg-transparent py-1 pl-3 pr-8 text-sm font-medium outline-none"
+        >
+          <option value="">This Week</option>
+          <option value="">Last Week</option>
+        </select>
+        <span class="absolute right-3 top-1/2 z-10 -translate-y-1/2">
+          <svg
+            width="10"
+            height="6"
+            viewBox="0 0 10 6"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M0.47072 1.08816C0.47072 1.02932 0.500141 0.955772 0.54427 0.911642C0.647241 0.808672 0.809051 0.808672 0.912022 0.896932L4.85431 4.60386C4.92785 4.67741 5.06025 4.67741 5.14851 4.60386L9.09079 0.896932C9.19376 0.793962 9.35557 0.808672 9.45854 0.911642C9.56151 1.01461 9.5468 1.17642 9.44383 1.27939L5.50155 4.98632C5.22206 5.23639 4.78076 5.23639 4.51598 4.98632L0.558981 1.27939C0.50014 1.22055 0.47072 1.16171 0.47072 1.08816Z"
+              fill="#637381"
+            />
+            <path
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M1.22659 0.546578L5.00141 4.09604L8.76422 0.557869C9.08459 0.244537 9.54201 0.329403 9.79139 0.578788C10.112 0.899434 10.0277 1.36122 9.77668 1.61224L9.76644 1.62248L5.81552 5.33722C5.36257 5.74249 4.6445 5.7544 4.19352 5.32924C4.19327 5.32901 4.19377 5.32948 4.19352 5.32924L0.225953 1.61241C0.102762 1.48922 -4.20186e-08 1.31674 -3.20269e-08 1.08816C-2.40601e-08 0.905899 0.0780105 0.712197 0.211421 0.578787C0.494701 0.295506 0.935574 0.297138 1.21836 0.539529L1.22659 0.546578ZM4.51598 4.98632C4.78076 5.23639 5.22206 5.23639 5.50155 4.98632L9.44383 1.27939C9.5468 1.17642 9.56151 1.01461 9.45854 0.911642C9.35557 0.808672 9.19376 0.793962 9.09079 0.896932L5.14851 4.60386C5.06025 4.67741 4.92785 4.67741 4.85431 4.60386L0.912022 0.896932C0.809051 0.808672 0.647241 0.808672 0.54427 0.911642C0.500141 0.955772 0.47072 1.02932 0.47072 1.08816C0.47072 1.16171 0.50014 1.22055 0.558981 1.27939L4.51598 4.98632Z"
+              fill="#637381"
+            />
+          </svg>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div id="chartTwo" class="-mb-9 -ml-5"></div>
+  </div>
+</div>
+ -->
+              <!-- ====== Chart Two End -->
+
+              <!-- ====== Chart Three Start -->
+              <!-- <div
+  class="col-span-12 rounded-sm border border-stroke bg-white px-5 pb-5 pt-7.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:col-span-5"
+>
+  <div class="mb-3 justify-between gap-4 sm:flex">
+    <div>
+      <h4 class="text-xl font-bold text-black dark:text-white">
+        Visitors Analytics
+      </h4>
+    </div>
+    <div>
+      <div class="relative z-20 inline-block">
+        <select
+          name=""
+          id=""
+          class="relative z-20 inline-flex appearance-none bg-transparent py-1 pl-3 pr-8 text-sm font-medium outline-none"
+        >
+          <option value="">Monthly</option>
+          <option value="">Yearly</option>
+        </select>
+        <span class="absolute right-3 top-1/2 z-10 -translate-y-1/2">
+          <svg
+            width="10"
+            height="6"
+            viewBox="0 0 10 6"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M0.47072 1.08816C0.47072 1.02932 0.500141 0.955772 0.54427 0.911642C0.647241 0.808672 0.809051 0.808672 0.912022 0.896932L4.85431 4.60386C4.92785 4.67741 5.06025 4.67741 5.14851 4.60386L9.09079 0.896932C9.19376 0.793962 9.35557 0.808672 9.45854 0.911642C9.56151 1.01461 9.5468 1.17642 9.44383 1.27939L5.50155 4.98632C5.22206 5.23639 4.78076 5.23639 4.51598 4.98632L0.558981 1.27939C0.50014 1.22055 0.47072 1.16171 0.47072 1.08816Z"
+              fill="#637381"
+            />
+            <path
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M1.22659 0.546578L5.00141 4.09604L8.76422 0.557869C9.08459 0.244537 9.54201 0.329403 9.79139 0.578788C10.112 0.899434 10.0277 1.36122 9.77668 1.61224L9.76644 1.62248L5.81552 5.33722C5.36257 5.74249 4.6445 5.7544 4.19352 5.32924C4.19327 5.32901 4.19377 5.32948 4.19352 5.32924L0.225953 1.61241C0.102762 1.48922 -4.20186e-08 1.31674 -3.20269e-08 1.08816C-2.40601e-08 0.905899 0.0780105 0.712197 0.211421 0.578787C0.494701 0.295506 0.935574 0.297138 1.21836 0.539529L1.22659 0.546578ZM4.51598 4.98632C4.78076 5.23639 5.22206 5.23639 5.50155 4.98632L9.44383 1.27939C9.5468 1.17642 9.56151 1.01461 9.45854 0.911642C9.35557 0.808672 9.19376 0.793962 9.09079 0.896932L5.14851 4.60386C5.06025 4.67741 4.92785 4.67741 4.85431 4.60386L0.912022 0.896932C0.809051 0.808672 0.647241 0.808672 0.54427 0.911642C0.500141 0.955772 0.47072 1.02932 0.47072 1.08816C0.47072 1.16171 0.50014 1.22055 0.558981 1.27939L4.51598 4.98632Z"
+              fill="#637381"
+            />
+          </svg>
+        </span>
+      </div>
+    </div>
+  </div>
+  <div class="mb-2">
+    <div id="chartThree" class="mx-auto flex justify-center"></div>
+  </div>
+  <div class="-mx-8 flex flex-wrap items-center justify-center gap-y-3">
+    <div class="w-full px-8 sm:w-1/2">
+      <div class="flex w-full items-center">
+        <span
+          class="mr-2 block h-3 w-full max-w-3 rounded-full bg-primary"
+        ></span>
+        <p
+          class="flex w-full justify-between text-sm font-medium text-black dark:text-white"
+        >
+          <span> Desktop </span>
+          <span> 65% </span>
+        </p>
+      </div>
+    </div>
+    <div class="w-full px-8 sm:w-1/2">
+      <div class="flex w-full items-center">
+        <span
+          class="mr-2 block h-3 w-full max-w-3 rounded-full bg-[#6577F3]"
+        ></span>
+        <p
+          class="flex w-full justify-between text-sm font-medium text-black dark:text-white"
+        >
+          <span> Tablet </span>
+          <span> 34% </span>
+        </p>
+      </div>
+    </div>
+    <div class="w-full px-8 sm:w-1/2">
+      <div class="flex w-full items-center">
+        <span
+          class="mr-2 block h-3 w-full max-w-3 rounded-full bg-[#8FD0EF]"
+        ></span>
+        <p
+          class="flex w-full justify-between text-sm font-medium text-black dark:text-white"
+        >
+          <span> Mobile </span>
+          <span> 45% </span>
+        </p>
+      </div>
+    </div>
+    <div class="w-full px-8 sm:w-1/2">
+      <div class="flex w-full items-center">
+        <span
+          class="mr-2 block h-3 w-full max-w-3 rounded-full bg-[#0FADCF]"
+        ></span>
+        <p
+          class="flex w-full justify-between text-sm font-medium text-black dark:text-white"
+        >
+          <span> Unknown </span>
+          <span> 12% </span>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+ -->
+              <!-- ====== Chart Three End -->
+
+              <!-- ====== Chat Card Start -->
+              <!-- <script>
+  messages = [
+    {
+      icon: "check_circle",
+      name: "Devid Heilo",
+      message: "Hello, how are you?",
+      time: "12 min",
+      unread: 3,
+    },
+    {
+      icon: "manage_accounts",
+      name: "Henry Fisher",
+      message: "I am waiting for you",
+      time: "5:54 PM",
+      unread: 0,
+    },
+    {
+      icon: "manage_accounts",
+      name: "Wilium Smith",
+      message: "Where are you now?",
+      time: "10:12 PM",
+      unread: 0,
+    },
+    {
+      icon: "manage_accounts",
+      name: "Henry Deco",
+      message: "Thank you so much!",
+      time: "Sun",
+      unread: 2,
+    },
+    {
+      icon: "manage_accounts",
+      name: "Jubin Jack",
+      message: "I really love that!",
+      time: "Oct 23",
+      unread: 0,
+    },
+    {
+      icon: "manage_accounts",
+      name: "Wilium Smith",
+      message: "Where are you now?",
+      time: "Sep 20",
+      unread: 0,
+    },
+  ];
+</script>
+
+<div
+  class="col-span-12 rounded-sm border border-stroke bg-white py-6 shadow-default dark:border-strokedark dark:bg-boxdark xl:col-span-4"
+>
+  <h4 class="mb-6 px-7.5 text-xl font-bold text-black dark:text-white">
+    Chats
+  </h4>
+
+  <template x-for="message in messages">
+    <a
+      href="messages.html"
+      class="flex items-center gap-5 px-7.5 py-3 hover:bg-gray-3 dark:hover:bg-meta-4"
+    >
+      <div class="relative h-14 w-14 rounded-full">
+        <div
+          class="flex h-11.5 w-11.5 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4"
+        >
+          <span class="material-icons" x-text="message.icon"></span>
+        </div>
+        <span
+          class="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-meta-3"
+        ></span>
+      </div>
+
+      <div class="flex flex-1 items-center justify-between">
+        <div>
+          <h5
+            class="font-medium"
+            :class="[(message.unread > 0 === true ? 'text-black dark:text-white' : '')]"
+            x-text="message.name"
+          ></h5>
+          <p>
+            <span
+              class="text-sm font-medium"
+              :class="[(message.unread > 0 === true ? 'text-black dark:text-white' : '')]"
+              x-text="message.message"
+            ></span>
+
+            <span class="text-xs" x-text="message.time"></span>
+          </p>
+        </div>
+        <template x-if="message.unread > 0">
+          <div
+            class="flex h-6 w-6 items-center justify-center rounded-full bg-primary"
+          >
+            <span
+              class="text-sm font-medium text-white"
+              x-text="message.unread"
+            ></span>
+          </div>
+        </template>
+      </div>
+    </a>
+  </template>
+</div>
+ -->
+              <!-- ====== Chat Card End -->
+            </div>
+          </div>
+        </main>
+        <!-- ===== Main Content End ===== -->
+      </div>
+      <!-- ===== Content Area End ===== -->
+    </div>
+    <!-- ===== Page Wrapper End ===== -->
+  <script defer src="bundle.js"></script></body>
+</html>

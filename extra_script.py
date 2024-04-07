@@ -1,5 +1,5 @@
 Import("env")
-from shutil import copyfile
+from shutil import copy
 import subprocess
 import gzip
 import io
@@ -32,7 +32,23 @@ def pre_build_fs_hook(source, target, env):
 
     subprocess.run('cd web && npm run build', shell=True, env=my_env)
 
-    compress_html('./web/dist/', 'index.html')
+
+    source_folder = r"./web/build/"
+    destination_folder = r"./data/"
+
+    # fetch all files
+    for file_name in os.listdir(source_folder):
+        print(file_name)
+        # construct full file path
+        source = source_folder + file_name
+        destination = destination_folder + file_name
+        # copy only files
+        if os.path.isfile(source):
+            copy(source, destination)
+            print('copied', file_name)
+
+
+    # compress_html('./web/dist/', 'index.html')
 
     print("Successfully completed before_fs_upload hook")
     # do some actions
