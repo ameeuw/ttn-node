@@ -158,7 +158,11 @@ void getStatusJson(DynamicJsonDocument &doc)
     // System stats
     esp_chip_info_t chip_info;
     esp_chip_info(&chip_info);
+    doc["system"]["features"]["psram"] = chip_info.features & CHIP_FEATURE_EMB_PSRAM;
     doc["system"]["features"]["wifi"] = chip_info.features & CHIP_FEATURE_WIFI_BGN;
+    doc["system"]["features"]["bt"] = chip_info.features & CHIP_FEATURE_BT;
+    doc["system"]["features"]["ble"] = chip_info.features & CHIP_FEATURE_BLE;
+
     doc["system"]["cores"] = chip_info.cores;
     doc["system"]["model"] = chip_info.model;
 
