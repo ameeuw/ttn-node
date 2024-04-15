@@ -1,5 +1,7 @@
 #include <include.h>
 
+#include "IPv6Address.h"
+
 #define HTTP_PORT 80
 #define DNS_PORT 53
 DNSServer dnsServer;
@@ -25,7 +27,10 @@ void initTasks(void)
 void setup()
 {
 #if defined(DEV2)
-  WiFi.softAP("TTGO_v2_0002");
+  WiFi.softAP("conode_dev", NULL, 12, false, 10);
+  // WiFi.softAP("TTGO_v2_0002");
+  if (!MDNS.begin("ludwig"))
+    Serial.println("Error setting up MDNS responder!");
 #elif defined(DEV3)
   WiFi.softAP("LOPY_0001");
 #elif defined(DEV4)
@@ -101,11 +106,35 @@ void setup()
   dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
   server.on("/status", HTTP_GET, [](AsyncWebServerRequest *request)
             {
-              DynamicJsonDocument doc(1024);
+              DynamicJsonDocument doc(2048);
               getStatusJson(doc);
               String message;
               serializeJson(doc, message);
               request->send(200, "text/json", message); });
+  server.on("/command", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+    char response[100];
+
+    if (request->params() > 0) {
+      AsyncWebParameter* p = request->getParam(0);
+      if (strcmp(p->value().c_str(), "CMD_SET_TIME") == 0) {
+        Serial.println("SETTING TIME");
+        uint32_t timestamp = request->getParam(1)->value().toInt();
+        Serial.print("Timestamp: ");
+        Serial.println(timestamp);
+        setTime(timestamp);
+        Serial.println("SENDING RESPONSE.");
+        sprintf(
+          response,
+          "%i",
+          timestamp
+        );
+        request->send(200, "text/plain", response);
+      } else {
+        Serial.println("NO VALID COMMAND!");
+        request->send(200, "text/plain", "NO VALID CMD!");
+      }
+    } });
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
             {
               String message = "";
@@ -138,7 +167,7 @@ void statusTask(void *parameter)
 
   while (true)
   {
-
+    updateClientRegistry();
     publishStatusMessage();
 
     if (counter % 6 == 0)

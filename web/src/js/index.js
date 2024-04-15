@@ -183,18 +183,29 @@ Alpine.store("featureCards", {
       },
       {
         title: `Wakeup: ${data.system.wakeUpReason} | Reset: ${data.system.resetReason}`,
-        value: `Time: ${data.time}`,
+        value: `Time: ${new Date(data.time * 1000).toISOString()}`,
         icon: "memory",
         trend: ``,
+      },
+      {
+        title: `Client Time: ${new Date().toLocaleString()} (${
+          (new Date().getTimezoneOffset() * 60) / 3600
+        })`,
+        value: `System Time: ${new Date(data.time * 1000).toISOString()}`,
+        icon: "time",
+        trend: `<a href="#" onclick="setTime()">Set Time</a>`,
       },
     ];
   },
 });
 
+const development = true;
+const host = development ? "http://192.168.4.1" : "";
+
 Alpine.store("system", {
   data: {},
   update() {
-    fetch("/status")
+    fetch(host + "/status")
       .then((res) => res.json())
       .then((data) => {
         this.data = data;
@@ -213,6 +224,21 @@ setInterval(() => {
 }, 5000);
 
 Alpine.start();
+
+window.setTime = () => {
+  var d = new Date();
+  var timestamp = Math.round(d.getTime() / 1000);
+  var offset = d.getTimezoneOffset() * 60;
+  console.log(`Timestamp: ${timestamp}`);
+  console.log(`Timezone offset: ${offset}`);
+  console.log(`Sending time: timestamp + offset = ${timestamp - offset}`);
+
+  let command = {
+    cmd: "CMD_SET_TIME",
+    param: timestamp - offset + 1,
+  };
+  fetch(`${host}/command?cmd=${command.cmd}&param=${command.param}`);
+};
 
 // Document Loaded
 document.addEventListener("DOMContentLoaded", () => {

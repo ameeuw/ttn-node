@@ -23,7 +23,7 @@
 #include "FS.h"
 #include <LittleFS.h>
 #include <ESPAsyncWebServer.h>
-#include <AsyncElegantOTA.h>
+// #include <AsyncElegantOTA.h>
 
 #ifdef USE_RTC
 #include "RTClib.h"

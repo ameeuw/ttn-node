@@ -92,7 +92,6 @@ void updateNodeTime()
 
 void getStatusJson(DynamicJsonDocument &doc)
 {
-    updateClientRegistry();
     // volatile UBaseType_t uxArraySize, x;
     // uint32_t ulTotalRunTime, ulStatsAsPercentage;
 
@@ -198,7 +197,7 @@ void getStatusJson(DynamicJsonDocument &doc)
 void publishStatusMessage()
 {
     String topic = "ludwig/stats";
-    DynamicJsonDocument doc(1024);
+    DynamicJsonDocument doc(2048);
     getStatusJson(doc);
     String message;
     serializeJson(doc, message);
