@@ -154,6 +154,32 @@ void getStatusJson(DynamicJsonDocument &doc)
     doc["lora"]["rssi"] = rssi;
     doc["lora"]["snr"] = float(snr + snrDecimalFraction / 10.0);
 
+    doc["lora"]["uplink"]["waiting"] = uxQueueMessagesWaiting(uplinkQueue);
+    struct linkMessage *nextUplink;
+    if (xQueuePeek(uplinkQueue, &(nextUplink), 0) == pdTRUE)
+    {
+        doc["lora"]["uplink"]["next"]["fPort"] = nextUplink->fport;
+        doc["lora"]["uplink"]["next"]["length"] = nextUplink->length;
+        JsonArray data = doc["lora"]["uplink"]["next"].createNestedArray("bytes");
+        for (uint8_t i = 0; i < (uint8_t)nextUplink->length; i++)
+        {
+            data.add(nextUplink->data[i]);
+        }
+    }
+
+    doc["lora"]["downlink"]["waiting"] = uxQueueMessagesWaiting(downlinkQueue);
+    struct linkMessage *nextDownlink;
+    if (xQueuePeek(downlinkQueue, &(nextDownlink), 0) == pdTRUE)
+    {
+        doc["lora"]["downlink"]["next"]["fPort"] = nextDownlink->fport;
+        doc["lora"]["downlink"]["next"]["length"] = nextDownlink->length;
+        JsonArray data = doc["lora"]["uplink"]["next"].createNestedArray("bytes");
+        for (uint8_t i = 0; i < (uint8_t)nextDownlink->length; i++)
+        {
+            data.add(nextDownlink->data[i]);
+        }
+    }
+
     // System stats
     esp_chip_info_t chip_info;
     esp_chip_info(&chip_info);
