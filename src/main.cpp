@@ -23,6 +23,107 @@ void initTasks(void)
       1              /* Pinned CPU core. */
   );
 }
+
+void listDir(fs::FS &fs, const char *dirname, uint8_t levels)
+{
+  Serial.printf("Listing directory: %s\n", dirname);
+
+  File root = fs.open(dirname);
+  if (!root)
+  {
+    Serial.println("Failed to open directory");
+    return;
+  }
+  if (!root.isDirectory())
+  {
+    Serial.println("Not a directory");
+    return;
+  }
+
+  File file = root.openNextFile();
+  while (file)
+  {
+    if (file.isDirectory())
+    {
+      Serial.print("  DIR : ");
+      Serial.println(file.name());
+      if (levels)
+      {
+        listDir(fs, file.name(), levels - 1);
+      }
+    }
+    else
+    {
+      Serial.print("  FILE: ");
+      Serial.print(file.name());
+      Serial.print("  SIZE: ");
+      Serial.println(file.size());
+    }
+    file = root.openNextFile();
+  }
+}
+
+void initFS()
+{
+
+  // Initialize SPIFFS
+  if (!LittleFS.begin(true))
+  {
+    Serial.println("LittleFS Mount Failed");
+  }
+  else
+  {
+    Serial.println("Mounted LittleFS");
+    listDir(LittleFS, "/", 0);
+  }
+
+#ifdef USE_SD
+
+#define SCK 14
+#define MISO 02
+#define MOSI 15
+#define CS 13
+  SPIClass spi = SPIClass(VSPI);
+  spi.begin(SCK, MISO, MOSI, CS);
+
+  if (!SD.begin(CS, spi, 80000000))
+  {
+    Serial.println("Card Mount Failed");
+    return;
+  }
+  uint8_t cardType = SD.cardType();
+
+  if (cardType == CARD_NONE)
+  {
+    Serial.println("No SD card attached");
+    return;
+  }
+
+  Serial.print("SD Card Type: ");
+  if (cardType == CARD_MMC)
+  {
+    Serial.println("MMC");
+  }
+  else if (cardType == CARD_SD)
+  {
+    Serial.println("SDSC");
+  }
+  else if (cardType == CARD_SDHC)
+  {
+    Serial.println("SDHC");
+  }
+  else
+  {
+    Serial.println("UNKNOWN");
+  }
+
+  uint64_t cardSize = SD.cardSize() / (1024 * 1024);
+  Serial.printf("SD Card Size: %lluMB\n", cardSize);
+
+  listDir(SD, "/", 0);
+#endif // USE_SD
+}
+
 #ifdef USE_RTC
 RTC_DS1307 rtc;
 
@@ -96,24 +197,8 @@ void setup()
   DateTime now = rtc.now();
   Serial.println(String("Time:\t") + now.timestamp(DateTime::TIMESTAMP_FULL));
 #endif
+  initFS();
 
-  // Initialize SPIFFS
-  if (!LittleFS.begin(true))
-  {
-    Serial.println("LittleFS Mount Failed");
-  }
-  else
-  {
-    Serial.println("Mounted LittleFS");
-    File root = LittleFS.open("/");
-    File file = root.openNextFile();
-    while (file)
-    {
-      Serial.print("FILE: ");
-      Serial.println(file.name());
-      file = root.openNextFile();
-    }
-  }
   dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
   server.on("/status", HTTP_GET, [](AsyncWebServerRequest *request)
             {
@@ -154,11 +239,19 @@ void setup()
             {
               String message = "";
               request->send(200, "text/plain", message); });
+#ifdef USE_SD
+  server.serveStatic("/", SD, "/");
+#else
   server.serveStatic("/", LittleFS, "/");
+#endif // USE_SD
   server.onNotFound([](AsyncWebServerRequest *request)
                     {
     Serial.println("NotFound! Serving index.html!");
+#ifdef USE_SD
+    request->send(SD, "/index.html", "text/html"); });
+#else
     request->send(LittleFS, "/index.html", "text/html"); });
+#endif // USE_SD
   // AsyncElegantOTA.begin(&server); // Start ElegantOTA
   server.begin();
 

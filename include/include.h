@@ -22,6 +22,9 @@
 #include <AsyncTCP.h>
 #include <DNSServer.h>
 #include "FS.h"
+#ifdef USE_SD
+#include <SD.h>
+#endif // USE_SD
 #include <LittleFS.h>
 #include <ESPAsyncWebServer.h>
 // #include <AsyncElegantOTA.h>
