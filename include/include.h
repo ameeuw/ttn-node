@@ -18,6 +18,7 @@
 #ifdef BOARD_TBEAM
 #include <TinyGPS++.h>
 #endif // BOARD_TBEAM
+
 #include <AsyncTCP.h>
 #include <DNSServer.h>
 #include "FS.h"
@@ -27,10 +28,9 @@
 
 #ifdef USE_RTC
 #include "RTClib.h"
-RTC_DS1307 rtc;
-#else
-#include "TimeLib.h"
 #endif
+
+#include "TimeLib.h"
 
 #include "lmic.h"
 #include "hal/hal.h"

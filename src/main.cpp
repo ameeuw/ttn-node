@@ -23,6 +23,14 @@ void initTasks(void)
       1              /* Pinned CPU core. */
   );
 }
+#ifdef USE_RTC
+RTC_DS1307 rtc;
+
+time_t time_provider()
+{
+  return rtc.now().unixtime();
+}
+#endif // USE_RTC
 
 void setup()
 {
@@ -66,6 +74,9 @@ void setup()
   {
     Serial.println("RTC found");
   }
+
+  setSyncProvider(time_provider); // sets Time Library to RTC time
+  setSyncInterval(5);
 
   if (!rtc.isrunning())
   {
@@ -122,7 +133,11 @@ void setup()
         uint32_t timestamp = request->getParam(1)->value().toInt();
         Serial.print("Timestamp: ");
         Serial.println(timestamp);
+#ifdef USE_RTC
+        rtc.adjust(DateTime(timestamp));
+#else
         setTime(timestamp);
+#endif // USE_RTC
         Serial.println("SENDING RESPONSE.");
         sprintf(
           response,

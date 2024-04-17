@@ -122,12 +122,12 @@ void getStatusJson(DynamicJsonDocument &doc)
         doc["tasks"][name]["priority"] = uxTaskPriorityGet(task);
     }
 
-#ifdef USE_RTC
-    DateTime now = rtc.now();
-    doc["time"] = now.timestamp(DateTime::TIMESTAMP_FULL);
-#else
+    // #ifdef USE_RTC
+    //     DateTime now = rtc.now();
+    //     doc["time"] = now.timestamp(DateTime::TIMESTAMP_FULL);
+    // #else
     doc["time"] = now();
-#endif
+    // #endif
 
     // Tasmota Node registry
     for (auto const &pair : tasmotaRegistry)

@@ -3,6 +3,10 @@
 
 #include "include.h"
 
+#ifdef USE_RTC
+extern RTC_DS1307 rtc;
+#endif // USE_RTC
+
 extern QueueHandle_t downlinkQueue;
 
 extern TaskHandle_t HandleDownlinkMsgTask;
