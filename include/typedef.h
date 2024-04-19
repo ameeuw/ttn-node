@@ -96,11 +96,11 @@ typedef struct mqttMessage
     String payload;
 } mqttMessage;
 
-struct tasmotaNode
+typedef struct tasmotaNode
 {
     String hostname;
     String ip;
     String topic;
-};
+} tasmotaNode;
 
 #endif
