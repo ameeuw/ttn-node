@@ -10,18 +10,36 @@ The process is divided into multiple tasks which either act on incoming events o
 The LoRaWAN code is heavily based on the LMIC-Node project which seems to be the one-fits-all-solution to anything LoRaWAN.
 It is reduced and extended to be processed by FreeRTOS and adds queue-workers for both sides.
 
-### Hardware
-Lopy v1
-TTGO Lora32
-TTGO T-Beam V1.2
+### Tested Hardware
+- Lopy v1
+  - real-time clock
+  - SD-card
+- TTGO Lora32 
+  - OLED display
+  - SD-card
+- TTGO T-Beam V1.2 
+  - GPS
+  - display
+  - Power management IC
 
 ### Tasks
-- HandleUplinkMessage
-- HandleDownloadMessage
+- HandleUplink
+- HandleDownlink
+- LMIC
+- Status
+- Mqtt
   
 ### Queues
 - UplinkQueue
 - DownlinkQueue
+
+### Payload structs
+- Telemetry
+- Tracer
+- Meter
+- CO2
+- GPS
+- Coolbox
 
 ### PicoMQTT
 ### Tasmota Registry
