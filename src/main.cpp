@@ -235,10 +235,6 @@ void setup()
         request->send(200, "text/plain", "NO VALID CMD!");
       }
     } });
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-            {
-              String message = "";
-              request->send(200, "text/plain", message); });
 #ifdef USE_SD
   server.serveStatic("/", SD, "/");
 #else
