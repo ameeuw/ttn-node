@@ -41,6 +41,12 @@
             </div>
             <!-- ====== Cards Features End -->
 
+            <!-- ====== Cards Lora Start -->
+            <div class="mt-4" x-data="{data: $store.loraCards}">
+              <include src="./partials/cards.html" />
+            </div>
+            <!-- ====== Cards Lora End -->
+
             <!-- ====== Cards Memory Start -->
             <div class="mt-4" x-data="{data: $store.memoryCards}">
               <include src="./partials/cards.html" />
@@ -79,6 +85,14 @@
                 </div>
               </div>
               <!-- ====== Table Task Registry End -->
+
+              <!-- ====== Table LoRa Uplinks Start -->
+              <div class="col-span-12 xl:col-span-12">
+                <div x-data='{data: $store.lastUplinks, title: "LoRa Uplinks"}'>
+                  <include src="./partials/table-01.html" />
+                </div>
+              </div>
+              <!-- ====== Table LoRa Uplinks End -->
 
               <!-- ====== Chart One Start -->
               <!-- <include src="./partials/chart-01.html" /> -->

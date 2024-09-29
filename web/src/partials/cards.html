@@ -6,39 +6,29 @@
     <div
       class="rounded-sm border border-stroke bg-white px-7.5 py-6 shadow-default dark:border-strokedark dark:bg-boxdark"
     >
-      <div
-        class="flex h-11.5 w-11.5 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4"
-      >
-        <span class="material-icons" x-text="card.icon"></span>
-      </div>
+      <template x-if="card.icon">
+        <div
+          class="flex h-11.5 w-11.5 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4"
+        >
+          <span class="material-icons" x-text="card.icon"></span>
+        </div>
+      </template>
 
       <div class="mt-4 flex items-end justify-between">
         <div>
-          <h4
+          <h3
             class="text-title-md font-bold text-black dark:text-white"
-            x-text="card.value"
-          ></h4>
+            x-html="card.value"
+          ></h3>
           <span class="text-sm font-medium" x-text="card.title"></span>
         </div>
-
-        <span
-          class="flex items-center gap-1 text-sm font-medium text-meta-3"
-          x-html="card.trend"
-        >
-          <svg
-            class="fill-meta-3"
-            width="10"
-            height="11"
-            viewBox="0 0 10 11"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
+        <template x-if="card.trend">
+          <span
+            class="flex items-center gap-1 text-sm font-medium text-meta-3"
+            x-html="card.trend"
           >
-            <path
-              d="M4.35716 2.47737L0.908974 5.82987L5.0443e-07 4.94612L5 0.0848689L10 4.94612L9.09103 5.82987L5.64284 2.47737L5.64284 10.0849L4.35716 10.0849L4.35716 2.47737Z"
-              fill=""
-            />
-          </svg>
-        </span>
+          </span>
+        </template>
       </div>
     </div>
     <!-- Card Item End -->

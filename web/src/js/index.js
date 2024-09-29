@@ -1,6 +1,7 @@
 import "jsvectormap/dist/css/jsvectormap.css";
 import "../css/style.css";
 import "@material-design-icons/font/filled.css";
+import * as decoder from "../../../payload-formatters/dist/uplink-formatters";
 
 import Alpine from "alpinejs";
 import persist from "@alpinejs/persist";
@@ -97,12 +98,27 @@ Alpine.store("tasmotaRegistry", {
   },
 });
 
+Alpine.store("lastUplinks", {
+  rows: {},
+  headers: [],
+  update(data) {
+    this.headers = ["fPort", "length", "bytes"];
+    if (!data.lora?.uplink?.last) return;
+    this.rows = data.lora.uplink.last.map((item) => {
+      return {
+        ...item,
+        bytes: JSON.stringify(decoder.decodeUplink(item).data, null, 2),
+      };
+    });
+  },
+});
+
 Alpine.store("taskRegistry", {
   rows: {},
   headers: [],
   update(data) {
     this.headers = ["name", "stack", "priority"];
-    this.rows = Object.values(data.tasks);
+    this.rows = Object.values(data.tasks).sort((a, b) => b.stack - a.stack);
   },
 });
 
@@ -115,7 +131,7 @@ Alpine.store("memoryCards", {
         value: `${Math.round(data.system.flash.used / 1000)}k / ${Math.round(
           data.system.flash.size / 1000
         )}k`,
-        icon: "memory",
+        icon: "storage",
         trend: `${(
           (data.system.flash.used / data.system.flash.size) *
           100
@@ -126,7 +142,7 @@ Alpine.store("memoryCards", {
         value: `${Math.round(data.system.fs.used / 1000)}k / ${Math.round(
           data.system.fs.size / 1000
         )}k`,
-        icon: "memory",
+        icon: "sd_card",
         trend: `${((data.system.fs.used / data.system.fs.size) * 100).toFixed(
           2
         )} %`,
@@ -136,7 +152,7 @@ Alpine.store("memoryCards", {
         value: `${Math.round(data.system.program.used / 1000)}k / ${Math.round(
           data.system.program.size / 1000
         )}k`,
-        icon: "memory",
+        icon: "terminal",
         trend: `${(
           (data.system.program.used / data.system.program.size) *
           100
@@ -165,7 +181,7 @@ Alpine.store("featureCards", {
       {
         title: `Cores: ${data.system.cores}`,
         value: `Model: ${printChipModel(data.system.model)}`,
-        icon: "memory",
+        icon: "developer_board",
         trend: `${[
           data.system.features.psram ? "PSRAM" : undefined,
           data.system.features.wifi ? "WiFi" : undefined,
@@ -176,24 +192,56 @@ Alpine.store("featureCards", {
           .join(" | ")}`,
       },
       {
-        title: `Up: ${data.lora.up} | Down: ${data.lora.down}`,
-        value: `RSSI: ${data.lora.rssi} dBm`,
-        icon: "memory",
-        trend: `SNR: ${data.lora.snr} dB`,
-      },
-      {
         title: `Wakeup: ${data.system.wakeUpReason} | Reset: ${data.system.resetReason}`,
         value: `Time: ${new Date(data.time * 1000).toISOString()}`,
-        icon: "memory",
+        icon: "history",
         trend: ``,
       },
       {
-        title: `Client Time: ${new Date().toLocaleString()} (${
+        title: `${new Date().toLocaleString()} (${
           (new Date().getTimezoneOffset() * 60) / 3600
         })`,
-        value: `System Time: ${new Date(data.time * 1000).toISOString()}`,
-        icon: "time",
+        value: `${new Date(data.time * 1000).toISOString()}`,
+        icon: "update",
         trend: `<a href="#" onclick="setTime()">Set Time</a>`,
+      },
+    ];
+  },
+});
+
+Alpine.store("loraCards", {
+  data: {},
+  update(data) {
+    this.data = [
+      {
+        title: `Joined: ${data.lora.joined} | Up: ${data.lora.up} | Down: ${data.lora.down}`,
+        value: `RSSI:\xa0${data.lora.rssi}\xa0dBm`,
+        icon: "settings_input_antenna",
+        trend: `SNR: ${data.lora.snr} dB`,
+      },
+      {
+        title: `Uplink waiting: ${data.lora.uplink.waiting}`,
+        value: `${
+          data.lora.uplink.next
+            ? '<textarea class="font-mono font-thin text-xs h-40" style="color:black">' +
+              JSON.stringify(
+                decoder.decodeUplink(data.lora.uplink.next).data,
+                null,
+                2
+              ) +
+              "</textarea>"
+            : ""
+        }`,
+        icon: "arrow_upward",
+        trend: `Sent: ${data.lora.up}`,
+      },
+      {
+        title: `Downlink waiting: ${data.lora.downlink.waiting}`,
+        value: `${
+          data.lora.downlink.next ? "Next: " + data.lora.downlink.next : ""
+        }`,
+        icon: "arrow_downward",
+        trend: `Received: ${data.lora.down}`,
       },
     ];
   },
@@ -214,6 +262,8 @@ Alpine.store("system", {
         Alpine.store("taskRegistry").update(data);
         Alpine.store("memoryCards").update(data);
         Alpine.store("featureCards").update(data);
+        Alpine.store("loraCards").update(data);
+        Alpine.store("lastUplinks").update(data);
       });
   },
 });
@@ -238,6 +288,21 @@ window.setTime = () => {
     param: timestamp - offset + 1,
   };
   fetch(`${host}/command?cmd=${command.cmd}&param=${command.param}`);
+};
+
+window.decodeThing = () => {
+  console.log("blubb");
+  const input = {
+    fPort: 15,
+    bytes: [
+      0x15, 0xae, 0x47, 0xe1, 0x7a, 0xb4, 0x47, 0x40, 0x15, 0xae, 0x47, 0xe1,
+      0x7a, 0x14, 0x21, 0x40, 0x33, 0x33, 0x33, 0x33, 0x33, 0x1f, 0x80, 0x40,
+      0xf6, 0x28, 0x5c, 0x8f, 0xc2, 0xf5, 0xf0, 0x3f, 0x5f, 0xcd, 0x7c, 0x65,
+      0x39, 0x05, 0xfd, 0x3f,
+    ],
+  };
+  const decodedPayload = decoder.decodeUplink(input);
+  return decodedPayload;
 };
 
 // Document Loaded

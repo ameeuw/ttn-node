@@ -188,39 +188,29 @@
     <div
       class="rounded-sm border border-stroke bg-white px-7.5 py-6 shadow-default dark:border-strokedark dark:bg-boxdark"
     >
-      <div
-        class="flex h-11.5 w-11.5 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4"
-      >
-        <span class="material-icons" x-text="card.icon"></span>
-      </div>
+      <template x-if="card.icon">
+        <div
+          class="flex h-11.5 w-11.5 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4"
+        >
+          <span class="material-icons" x-text="card.icon"></span>
+        </div>
+      </template>
 
       <div class="mt-4 flex items-end justify-between">
         <div>
-          <h4
+          <h3
             class="text-title-md font-bold text-black dark:text-white"
-            x-text="card.value"
-          ></h4>
+            x-html="card.value"
+          ></h3>
           <span class="text-sm font-medium" x-text="card.title"></span>
         </div>
-
-        <span
-          class="flex items-center gap-1 text-sm font-medium text-meta-3"
-          x-html="card.trend"
-        >
-          <svg
-            class="fill-meta-3"
-            width="10"
-            height="11"
-            viewBox="0 0 10 11"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
+        <template x-if="card.trend">
+          <span
+            class="flex items-center gap-1 text-sm font-medium text-meta-3"
+            x-html="card.trend"
           >
-            <path
-              d="M4.35716 2.47737L0.908974 5.82987L5.0443e-07 4.94612L5 0.0848689L10 4.94612L9.09103 5.82987L5.64284 2.47737L5.64284 10.0849L4.35716 10.0849L4.35716 2.47737Z"
-              fill=""
-            />
-          </svg>
-        </span>
+          </span>
+        </template>
       </div>
     </div>
     <!-- Card Item End -->
@@ -229,6 +219,48 @@
 
             </div>
             <!-- ====== Cards Features End -->
+
+            <!-- ====== Cards Lora Start -->
+            <div class="mt-4" x-data="{data: $store.loraCards}">
+              <div
+  class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4 2xl:gap-7.5"
+>
+  <template x-for="(card, index) in data.data" :key="index">
+    <!-- Card Item Start -->
+    <div
+      class="rounded-sm border border-stroke bg-white px-7.5 py-6 shadow-default dark:border-strokedark dark:bg-boxdark"
+    >
+      <template x-if="card.icon">
+        <div
+          class="flex h-11.5 w-11.5 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4"
+        >
+          <span class="material-icons" x-text="card.icon"></span>
+        </div>
+      </template>
+
+      <div class="mt-4 flex items-end justify-between">
+        <div>
+          <h3
+            class="text-title-md font-bold text-black dark:text-white"
+            x-html="card.value"
+          ></h3>
+          <span class="text-sm font-medium" x-text="card.title"></span>
+        </div>
+        <template x-if="card.trend">
+          <span
+            class="flex items-center gap-1 text-sm font-medium text-meta-3"
+            x-html="card.trend"
+          >
+          </span>
+        </template>
+      </div>
+    </div>
+    <!-- Card Item End -->
+  </template>
+</div>
+
+            </div>
+            <!-- ====== Cards Lora End -->
 
             <!-- ====== Cards Memory Start -->
             <div class="mt-4" x-data="{data: $store.memoryCards}">
@@ -240,39 +272,29 @@
     <div
       class="rounded-sm border border-stroke bg-white px-7.5 py-6 shadow-default dark:border-strokedark dark:bg-boxdark"
     >
-      <div
-        class="flex h-11.5 w-11.5 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4"
-      >
-        <span class="material-icons" x-text="card.icon"></span>
-      </div>
+      <template x-if="card.icon">
+        <div
+          class="flex h-11.5 w-11.5 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4"
+        >
+          <span class="material-icons" x-text="card.icon"></span>
+        </div>
+      </template>
 
       <div class="mt-4 flex items-end justify-between">
         <div>
-          <h4
+          <h3
             class="text-title-md font-bold text-black dark:text-white"
-            x-text="card.value"
-          ></h4>
+            x-html="card.value"
+          ></h3>
           <span class="text-sm font-medium" x-text="card.title"></span>
         </div>
-
-        <span
-          class="flex items-center gap-1 text-sm font-medium text-meta-3"
-          x-html="card.trend"
-        >
-          <svg
-            class="fill-meta-3"
-            width="10"
-            height="11"
-            viewBox="0 0 10 11"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
+        <template x-if="card.trend">
+          <span
+            class="flex items-center gap-1 text-sm font-medium text-meta-3"
+            x-html="card.trend"
           >
-            <path
-              d="M4.35716 2.47737L0.908974 5.82987L5.0443e-07 4.94612L5 0.0848689L10 4.94612L9.09103 5.82987L5.64284 2.47737L5.64284 10.0849L4.35716 10.0849L4.35716 2.47737Z"
-              fill=""
-            />
-          </svg>
-        </span>
+          </span>
+        </template>
       </div>
     </div>
     <!-- Card Item End -->
@@ -494,6 +516,74 @@
                 </div>
               </div>
               <!-- ====== Table Task Registry End -->
+
+              <!-- ====== Table LoRa Uplinks Start -->
+              <div class="col-span-12 xl:col-span-12">
+                <div x-data='{data: $store.lastUplinks, title: "LoRa Uplinks"}'>
+                  <div
+  class="rounded-sm border border-stroke bg-white px-5 pb-2.5 pt-6 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:pb-1"
+>
+  <h4
+    class="mb-6 text-xl font-bold text-black dark:text-white"
+    x-text="title"
+  ></h4>
+
+  <!-- <textarea
+    x-text="JSON.stringify(data, null, 2)"
+    style="width: 100%; height: 200px"
+  ></textarea> -->
+
+  <div class="flex flex-col">
+    <div
+      class="grid grid-cols-3 rounded-sm bg-gray-2 dark:bg-meta-4 sm:grid-cols-4"
+    >
+      <template x-for="header in data.headers">
+        <div class="p-2.5 xl:p-5">
+          <h5
+            class="text-sm font-medium uppercase xsm:text-base"
+            x-text="header"
+          ></h5>
+        </div>
+      </template>
+    </div>
+
+    <template x-for="row in data.rows">
+      <div
+        class="grid grid-cols-3 border-b border-stroke dark:border-strokedark sm:grid-cols-5"
+      >
+        <div class="flex items-center gap-3 p-2.5 xl:p-5">
+          <p
+            class="hidden font-medium text-black dark:text-white sm:block"
+            x-text="row[data.headers[0]]"
+          ></p>
+        </div>
+
+        <div class="flex items-center justify-center p-2.5 xl:p-5">
+          <p
+            class="font-medium text-black dark:text-white"
+            x-text="row[data.headers[1]]"
+          ></p>
+        </div>
+
+        <div class="flex items-center justify-center p-2.5 xl:p-5">
+          <p class="font-medium text-meta-3" x-text="row[data.headers[2]]"></p>
+        </div>
+
+        <div class="hidden items-center justify-center p-2.5 sm:flex xl:p-5">
+          <a
+            class="font-medium text-black dark:text-white"
+            x-bind:href="row[data.headers[3]]"
+            x-text="row[data.headers[3]]"
+          ></a>
+        </div>
+      </div>
+    </template>
+  </div>
+</div>
+
+                </div>
+              </div>
+              <!-- ====== Table LoRa Uplinks End -->
 
               <!-- ====== Chart One Start -->
               <!-- <div

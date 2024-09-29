@@ -866,6 +866,9 @@ video {
 .h-4 {
   height: 1rem;
 }
+.h-40 {
+  height: 10rem;
+}
 .h-5 {
   height: 1.25rem;
 }
@@ -1212,9 +1215,6 @@ video {
   --tw-bg-opacity: 1;
   background-color: rgb(245 247 253 / var(--tw-bg-opacity));
 }
-.fill-meta-3 {
-  fill: #10B981;
-}
 .p-1 {
   padding: 0.25rem;
 }
@@ -1316,6 +1316,9 @@ video {
 .pt-7\.5 {
   padding-top: 1.875rem;
 }
+.font-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
 .text-sm {
   font-size: 0.875rem;
   line-height: 1.25rem;
@@ -1340,6 +1343,9 @@ video {
 }
 .font-semibold {
   font-weight: 600;
+}
+.font-thin {
+  font-weight: 100;
 }
 .uppercase {
   text-transform: uppercase;
