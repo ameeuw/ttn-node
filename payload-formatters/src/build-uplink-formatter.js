@@ -20,7 +20,8 @@ function buildUplinkFormatter(parsedStructs) {
     decodeStructObject.toString() +
     "\n" +
     decodeUplink.toString() +
-    "\n"
+    "\n" +
+    "module.exports = { decodeUplink };"
   );
 }
 
