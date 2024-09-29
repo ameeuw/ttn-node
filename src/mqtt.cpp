@@ -98,6 +98,7 @@ void getLoraStatusJson(DynamicJsonDocument &doc)
     // Lora Stats
     doc["lora"]["up"] = LMIC.seqnoUp;
     doc["lora"]["down"] = LMIC.seqnoDn;
+    doc["lora"]["joined"] = joined;
     int16_t snrTenfold = getSnrTenfold();
     int8_t snr = snrTenfold / 10;
     int8_t snrDecimalFraction = snrTenfold % 10;
