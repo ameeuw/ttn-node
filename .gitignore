@@ -11,3 +11,5 @@ keyfiles/**
 !keyfiles/lorawan-keys_example.h
 # Exclude any LoRaWAN key files with following pattern
 *lorawan-keys.h
+
+node_modules 

@@ -59,6 +59,7 @@ void handleUplinkMsgTask(void *parameter)
                     else
                     {
                         scheduleUplink(prxuplinkMessage->fport, prxuplinkMessage->data, prxuplinkMessage->length, false);
+                        lastUplinks.add(*prxuplinkMessage);
                     }
                     count = 0;
                 }
@@ -127,6 +128,7 @@ void handleDownlinkMsgTask(void *parameter)
                 setTime(unixtime);
 #endif
             }
+            lastDownlinks.add(*prxdownlinkMessage);
             vPortFree(prxdownlinkMessage);
         }
     }

@@ -1,0 +1,36 @@
+<div
+  class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4 2xl:gap-7.5"
+>
+  <template x-for="(card, index) in data.data" :key="index">
+    <!-- Card Item Start -->
+    <div
+      class="rounded-sm border border-stroke bg-white px-7.5 py-6 shadow-default dark:border-strokedark dark:bg-boxdark"
+    >
+      <template x-if="card.icon">
+        <div
+          class="flex h-11.5 w-11.5 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4"
+        >
+          <span class="material-icons" x-text="card.icon"></span>
+        </div>
+      </template>
+
+      <div class="mt-4 flex items-end justify-between">
+        <div>
+          <h3
+            class="text-title-md font-bold text-black dark:text-white"
+            x-html="card.value"
+          ></h3>
+          <span class="text-sm font-medium" x-text="card.title"></span>
+        </div>
+        <template x-if="card.trend">
+          <span
+            class="flex items-center gap-1 text-sm font-medium text-meta-3"
+            x-html="card.trend"
+          >
+          </span>
+        </template>
+      </div>
+    </div>
+    <!-- Card Item End -->
+  </template>
+</div>

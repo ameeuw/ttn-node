@@ -60,7 +60,12 @@ Available nodes post on `tasmota/discovery/<MAC>/config` with payload:
 - [ ] Retry failed scheduleUplink calls
 - [ ] Status Website served on captive portal (copy functionality from ClockClock)
   - [ ] Last GPS coordinate (maybe even on map?)
-  - [ ] Current time
+  - [x] Current time
   - [x] Links to connected clients with host name, ip address
   - [x] Status of Task heaps
+  - [x] System Information and Status: chip, heap, time, clock
+  - [x] LoRa Status: joined, snr, rssi
+  - [x] LoRa queue: uplink, downlink, next & last messages
+  - [x] Payload parsing from TTN parsers
+  - [ ] Split status json messages to different endpoints (/system, /lora, /registry, /tasks)
 - [x] OTA functionality (https://randomnerdtutorials.com/esp32-ota-over-the-air-vs-code/)

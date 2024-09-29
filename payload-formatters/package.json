@@ -1,0 +1,11 @@
+{
+  "name": "payload-formatters",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "test": "node src/*.spec.js",
+    "build": "node src/index.js"
+  },
+  "author": "Arne Meeuw",
+  "license": "ISC"
+}

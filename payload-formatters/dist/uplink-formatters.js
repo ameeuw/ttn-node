@@ -141,3 +141,4 @@ function decodeUplink(input, parsedStructs = structs) {
     warnings: warnings,
   };
 }
+module.exports = { decodeUplink };

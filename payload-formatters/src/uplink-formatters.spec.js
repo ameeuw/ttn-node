@@ -1,5 +1,8 @@
 const { decodeUplink } = require("./base-uplink-formatters");
-const parsedStructs = require("./parsed-structs.json");
+const { parseStructsFromFile } = require("./parse-typedef");
+
+const filePath = "../include/typedef.h";
+const parsedStructs = parseStructsFromFile(filePath);
 
 function assertObjectEquality(actual, expected) {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {

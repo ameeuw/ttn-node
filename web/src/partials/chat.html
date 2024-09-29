@@ -1,0 +1,101 @@
+<script>
+  messages = [
+    {
+      icon: "check_circle",
+      name: "Devid Heilo",
+      message: "Hello, how are you?",
+      time: "12 min",
+      unread: 3,
+    },
+    {
+      icon: "manage_accounts",
+      name: "Henry Fisher",
+      message: "I am waiting for you",
+      time: "5:54 PM",
+      unread: 0,
+    },
+    {
+      icon: "manage_accounts",
+      name: "Wilium Smith",
+      message: "Where are you now?",
+      time: "10:12 PM",
+      unread: 0,
+    },
+    {
+      icon: "manage_accounts",
+      name: "Henry Deco",
+      message: "Thank you so much!",
+      time: "Sun",
+      unread: 2,
+    },
+    {
+      icon: "manage_accounts",
+      name: "Jubin Jack",
+      message: "I really love that!",
+      time: "Oct 23",
+      unread: 0,
+    },
+    {
+      icon: "manage_accounts",
+      name: "Wilium Smith",
+      message: "Where are you now?",
+      time: "Sep 20",
+      unread: 0,
+    },
+  ];
+</script>
+
+<div
+  class="col-span-12 rounded-sm border border-stroke bg-white py-6 shadow-default dark:border-strokedark dark:bg-boxdark xl:col-span-4"
+>
+  <h4 class="mb-6 px-7.5 text-xl font-bold text-black dark:text-white">
+    Chats
+  </h4>
+
+  <template x-for="message in messages">
+    <a
+      href="messages.html"
+      class="flex items-center gap-5 px-7.5 py-3 hover:bg-gray-3 dark:hover:bg-meta-4"
+    >
+      <div class="relative h-14 w-14 rounded-full">
+        <div
+          class="flex h-11.5 w-11.5 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4"
+        >
+          <span class="material-icons" x-text="message.icon"></span>
+        </div>
+        <span
+          class="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-meta-3"
+        ></span>
+      </div>
+
+      <div class="flex flex-1 items-center justify-between">
+        <div>
+          <h5
+            class="font-medium"
+            :class="[(message.unread > 0 === true ? 'text-black dark:text-white' : '')]"
+            x-text="message.name"
+          ></h5>
+          <p>
+            <span
+              class="text-sm font-medium"
+              :class="[(message.unread > 0 === true ? 'text-black dark:text-white' : '')]"
+              x-text="message.message"
+            ></span>
+
+            <span class="text-xs" x-text="message.time"></span>
+          </p>
+        </div>
+        <template x-if="message.unread > 0">
+          <div
+            class="flex h-6 w-6 items-center justify-center rounded-full bg-primary"
+          >
+            <span
+              class="text-sm font-medium text-white"
+              x-text="message.unread"
+            ></span>
+          </div>
+        </template>
+      </div>
+    </a>
+  </template>
+</div>
