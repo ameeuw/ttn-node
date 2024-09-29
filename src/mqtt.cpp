@@ -7,6 +7,9 @@ PicoMQTT::Server mqtt;
 // Tasmota Node registry
 std::map<String, tasmotaNode> tasmotaRegistry;
 
+CircularBuffer lastUplinks;
+CircularBuffer lastDownlinks;
+
 void handleMqttUplink(const char *topic, const char *payload)
 {
     String nodeName = mqtt.get_topic_element(topic, 1);
@@ -217,6 +220,8 @@ void getStatusJson(DynamicJsonDocument &doc)
     getLoraStatusJson(doc);
     getSystemStatusJson(doc);
     getRegistryStatusJson(doc);
+    lastUplinks.getLoraStatusJson(doc);
+    // lastUplinks.print();
 }
 
 void publishStatusMessage()

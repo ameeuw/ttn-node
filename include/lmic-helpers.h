@@ -12,6 +12,9 @@ extern QueueHandle_t downlinkQueue;
 extern TaskHandle_t HandleDownlinkMsgTask;
 extern TaskHandle_t HandleUplinkMsgTask;
 
+extern CircularBuffer lastUplinks;
+extern CircularBuffer lastDownlinks;
+
 void initHelperTasks(void);
 void handleUplinkMsgTask(void *);
 void handleDownlinkMsgTask(void *parameter);

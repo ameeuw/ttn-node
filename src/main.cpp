@@ -202,7 +202,7 @@ void setup()
   dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
   server.on("/status", HTTP_GET, [](AsyncWebServerRequest *request)
             {
-              DynamicJsonDocument doc(2048);
+              DynamicJsonDocument doc(8192);
               getStatusJson(doc);
               String message;
               serializeJson(doc, message);
