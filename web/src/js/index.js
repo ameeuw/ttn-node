@@ -13,7 +13,7 @@ import chart04 from "./components/chart-04";
 Alpine.plugin(persist);
 window.Alpine = Alpine;
 
-function printChipModel(model) {
+function getChipModel(model) {
   switch (model) {
     case 1:
       return "ESP32";
@@ -38,35 +38,95 @@ function printChipModel(model) {
   }
 }
 
-function printWakeUpReason(reason) {
+function getWakeUpReason(reason) {
   switch (key) {
     case 2:
-      wakeupReasonString = "Wake-up from external signal with RTC_IO";
-      break;
+      return "Wake-up from external signal with RTC_IO";
     case 3:
-      wakeupReasonString = "Wake-up from external signal with RTC_CNTL";
-      break;
+      return "Wake-up from external signal with RTC_CNTL";
     case 4:
-      wakeupReasonString = "Wake-up caused by a timer";
-      break;
+      return "Wake-up caused by a timer";
     case 5:
-      wakeupReasonString = "Wake-up caused by a touchpad";
-      break;
+      return "Wake-up caused by a touchpad";
     case 6:
-      wakeupReasonString = "Wake-up caused by ULP program";
-      break;
+      return "Wake-up caused by ULP program";
     case 7:
-      wakeupReasonString = "Wake-up caused by GPIO";
-      break;
+      return "Wake-up caused by GPIO";
     case 8:
-      wakeupReasonString = "Wake-up cause by UART";
-      break;
-
+      return "Wake-up cause by UART";
     default:
-      wakeupReasonString = "Wake-up reason not identified";
-      break;
+      return "Wake-up reason not identified";
   }
-  return wakeupReasonString;
+}
+
+function getLmicEvent(event) {
+  const LmicEventsEnum = {
+    EV_UKNOWN: 0,
+    EV_SCAN_TIMEOUT: 1,
+    EV_BEACON_FOUND: 2,
+    EV_BEACON_MISSED: 3,
+    EV_BEACON_TRACKED: 3,
+    EV_JOINING: 4,
+    EV_JOINED: 5,
+    EV_RFU1: 6,
+    EV_JOIN_FAILED: 7,
+    EV_REJOIN_FAILED: 8,
+    EV_TXCOMPLETE: 9,
+    EV_LOST_TSYNC: 10,
+    EV_RESET: 11,
+    EV_RXCOMPLETE: 12,
+    EV_LINK_DEAD: 13,
+    EV_LINK_ALIVE: 14,
+    EV_SCAN_FOUND: 15,
+    EV_TXSTART: 16,
+    EV_TXCANCELED: 17,
+    EV_RXSTART: 18,
+    EV_JOIN_TXCOMPLETE: 19,
+  };
+  switch (key) {
+    case LmicEventsEnum.EV_SCAN_TIMEOUT:
+      return "EV_SCAN_TIMEOUT";
+    case LmicEventsEnum.EV_BEACON_FOUND:
+      return "EV_BEACON_FOUND";
+    case LmicEventsEnum.EV_BEACON_MISSED:
+      return "EV_BEACON_MISSED";
+    case LmicEventsEnum.EV_BEACON_TRACKED:
+      return "EV_BEACON_TRACKED";
+    case LmicEventsEnum.EV_JOINING:
+      return "EV_JOINING";
+    case LmicEventsEnum.EV_JOINED:
+      return "EV_JOINED";
+    case LmicEventsEnum.EV_RFU1:
+      return "EV_RFU1";
+    case LmicEventsEnum.EV_JOIN_FAILED:
+      return "EV_JOIN_FAILED";
+    case LmicEventsEnum.EV_REJOIN_FAILED:
+      return "EV_REJOIN_FAILED";
+    case LmicEventsEnum.EV_TXCOMPLETE:
+      return "EV_TXCOMPLETE";
+    case LmicEventsEnum.EV_LOST_TSYNC:
+      return "EV_LOST_TSYNC";
+    case LmicEventsEnum.EV_RESET:
+      return "EV_RESET";
+    case LmicEventsEnum.EV_RXCOMPLETE:
+      return "EV_RXCOMPLETE";
+    case LmicEventsEnum.EV_LINK_DEAD:
+      return "EV_LINK_DEAD";
+    case LmicEventsEnum.EV_LINK_ALIVE:
+      return "EV_LINK_ALIVE";
+    case LmicEventsEnum.EV_SCAN_FOUND:
+      return "EV_SCAN_FOUND";
+    case LmicEventsEnum.EV_TXSTART:
+      return "EV_TXSTART";
+    case LmicEventsEnum.EV_TXCANCELED:
+      return "EV_TXCANCELED";
+    case LmicEventsEnum.EV_RXSTART:
+      return "EV_RXSTART";
+    case LmicEventsEnum.EV_JOIN_TXCOMPLETE:
+      return "EV_JOIN_TXCOMPLETE";
+    default:
+      return `Unknown event (${event})`;
+  }
 }
 
 Alpine.store("clientRegistry", {
@@ -74,6 +134,7 @@ Alpine.store("clientRegistry", {
   headers: [],
   update(data) {
     this.headers = ["mac", "hostname", "ip", "topic"];
+    if (!data.registry.client) return;
     this.rows = Object.keys(data.registry.client).map((key) => {
       return {
         mac: key,
@@ -188,7 +249,7 @@ Alpine.store("featureCards", {
     this.data = [
       {
         title: `Cores: ${data.system.cores}`,
-        value: `Model: ${printChipModel(data.system.model)}`,
+        value: `Model: ${getChipModel(data.system.model)}`,
         icon: "developer_board",
         trend: `${[
           data.system.features.psram ? "PSRAM" : undefined,

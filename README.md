@@ -72,7 +72,7 @@ Available nodes post on `tasmota/discovery/<MAC>/config` with payload:
 - [x] Forward Downlink messages to MQTT
 - [ ] Confirm sending of downlink messages via uplink message (check-byte on mirrored fport?)
 - [x] Change key management to be equivalent to ttn mapper style
-- [ ] Forward LMIC events via MQTT
+- [x] Forward LMIC events via MQTT
 - [ ] Forward LMIC events to main application
 - [ ] Reboot or reconnect on lost LMIC connection
 - [ ] Retry failed scheduleUplink calls

@@ -121,8 +121,6 @@ void setupLmic(bit_t adrEnabled = 1,
                dr_t abpDataRate = DefaultABPDataRate,
                s1_t abpTxPower = DefaultABPTxPower)
 {
-    // ostime_t timestamp = os_getTime();
-
     // Initialize LMIC runtime environment
     os_init();
     // Reset MAC state
@@ -185,6 +183,15 @@ void onEvent(ev_t ev)
     // LMIC event handler
     ostime_t timestamp = os_getTime();
 
+    const String topic = "ludwig/lora/event";
+    DynamicJsonDocument doc(1024);
+    doc["ostime"] = timestamp;
+    doc["event"] = ev;
+    String message;
+    serializeJson(doc, message);
+    Serial.println(message);
+    mqtt.publish(topic, message);
+
     switch (ev)
     {
 #ifdef MCCI_LMIC
@@ -243,6 +250,7 @@ void onEvent(ev_t ev)
         printEvent(timestamp, ev);
         Serial.println("EV_LINK_DEAD EVENT!");
         Serial.println("Restarting...");
+        joined = false;
         ESP.restart();
         break;
 
@@ -253,7 +261,7 @@ void onEvent(ev_t ev)
     case EV_BEACON_TRACKED:
     case EV_RFU1: // This event is defined but not used in code
     case EV_JOINING:
-        Serial.println("EV_JOIN_FAILED EVENT!");
+        Serial.println("EV_JOINING EVENT!");
         break;
     case EV_JOIN_FAILED:
         Serial.println("EV_JOIN_FAILED EVENT!");
@@ -261,6 +269,9 @@ void onEvent(ev_t ev)
         break;
     case EV_REJOIN_FAILED:
     case EV_LOST_TSYNC:
+        Serial.println("EV_JOIN_FAILED EVENT!");
+        joined = false;
+        break;
     case EV_RESET:
     case EV_RXCOMPLETE:
     case EV_LINK_ALIVE:

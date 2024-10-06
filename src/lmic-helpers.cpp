@@ -29,6 +29,22 @@ void initHelperTasks(void)
     );
 }
 
+String publishLinkMessage(const char *topic, const linkMessage *pMessage)
+{
+    DynamicJsonDocument doc(1024);
+    doc["fport"] = pMessage->fport;
+    doc["length"] = pMessage->length;
+    JsonArray data = doc.createNestedArray("data");
+    for (uint8_t i = 0; i < (uint8_t)pMessage->length; i++)
+    {
+        data.add(pMessage->data[i]);
+    }
+    String message;
+    serializeJson(doc, message);
+    mqtt.publish(topic, message);
+    return message;
+}
+
 void handleUplinkMsgTask(void *parameter)
 {
     uint8_t count = 0;
@@ -60,6 +76,9 @@ void handleUplinkMsgTask(void *parameter)
                     {
                         scheduleUplink(prxuplinkMessage->fport, prxuplinkMessage->data, prxuplinkMessage->length, false);
                         lastUplinks.add(*prxuplinkMessage);
+                        String topic = "ludwig/lora/uplink";
+                        String message = publishLinkMessage(topic.c_str(), prxuplinkMessage);
+                        Serial.printf("Published message in topic '%s': %s\n", topic.c_str(), message.c_str());
                     }
                     count = 0;
                 }
@@ -98,21 +117,10 @@ void handleDownlinkMsgTask(void *parameter)
                 Serial.print(prxdownlinkMessage->data[i]);
             }
 
-            String topic = "ludwig/downlink";
-            DynamicJsonDocument doc(1024);
-            doc["fport"] = prxdownlinkMessage->fport;
-            doc["length"] = prxdownlinkMessage->length;
-            JsonArray data = doc.createNestedArray("data");
-            for (uint8_t i = 0; i < (uint8_t)prxdownlinkMessage->length; i++)
-            {
-                data.add(prxdownlinkMessage->data[i]);
-            }
-            String message;
-            serializeJson(doc, message);
-            Serial.println(message);
-            mqtt.publish(topic, message);
+            String topic = "ludwig/lora/downlink";
+            String message = publishLinkMessage(topic.c_str(), prxdownlinkMessage);
 
-            Serial.printf("Publishing message in topic '%s': %s\n", topic.c_str(), message.c_str());
+            Serial.printf("Published message in topic '%s': %s\n", topic.c_str(), message.c_str());
 
             if (prxdownlinkMessage->fport == cmdPort && prxdownlinkMessage->length == 1 && prxdownlinkMessage->data[0] == resetCmd)
             {
