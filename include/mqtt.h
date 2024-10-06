@@ -6,6 +6,13 @@
 template <typename T>
 extern void handlePayloadAndQueueUplink(const char *payload);
 void getStatusJson(DynamicJsonDocument &doc);
+void getLoraStatusJson(DynamicJsonDocument &doc);
+void getTaskStatusJson(DynamicJsonDocument &doc);
+void getSystemStatusJson(DynamicJsonDocument &doc);
+void getRegistryStatusJson(DynamicJsonDocument &doc);
+
+extern CircularBuffer lastUplinks;
+extern CircularBuffer lastDownlinks;
 
 extern TaskHandle_t MqttTask;
 extern TaskHandle_t LmicTask;

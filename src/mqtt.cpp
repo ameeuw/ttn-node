@@ -95,6 +95,7 @@ void updateNodeTime()
 
 void getLoraStatusJson(DynamicJsonDocument &doc)
 {
+    doc["time"] = now();
     // Lora Stats
     doc["lora"]["up"] = LMIC.seqnoUp;
     doc["lora"]["down"] = LMIC.seqnoDn;
@@ -127,6 +128,7 @@ void getLoraStatusJson(DynamicJsonDocument &doc)
 
 void getSystemStatusJson(DynamicJsonDocument &doc)
 {
+    doc["time"] = now();
     // System stats
     esp_chip_info_t chip_info;
     esp_chip_info(&chip_info);
@@ -169,6 +171,7 @@ void getSystemStatusJson(DynamicJsonDocument &doc)
 
 void getRegistryStatusJson(DynamicJsonDocument &doc)
 {
+    doc["time"] = now();
     // Tasmota Node registry
     for (auto const &pair : tasmotaRegistry)
     {
@@ -184,6 +187,19 @@ void getRegistryStatusJson(DynamicJsonDocument &doc)
         doc["registry"]["client"][pair.first.c_str()]["topic"] = pair.second.topic;
     }
 }
+
+void getTaskStatusJson(DynamicJsonDocument &doc)
+{
+    doc["time"] = now();
+    for (auto task : {MqttTask, LmicTask, HandleUplinkMsgTask, HandleDownlinkMsgTask})
+    {
+        String name = pcTaskGetTaskName(task);
+        doc["tasks"][name]["stack"] = uxTaskGetStackHighWaterMark(task);
+        doc["tasks"][name]["name"] = name;
+        doc["tasks"][name]["priority"] = uxTaskPriorityGet(task);
+    }
+}
+
 void getStatusJson(DynamicJsonDocument &doc)
 {
     // volatile UBaseType_t uxArraySize, x;
@@ -208,29 +224,42 @@ void getStatusJson(DynamicJsonDocument &doc)
     // }
     // vPortFree(pxTaskStatusArray);
 
-    for (auto task : {MqttTask, LmicTask, HandleUplinkMsgTask, HandleDownlinkMsgTask})
-    {
-        String name = pcTaskGetTaskName(task);
-        doc["tasks"][name]["stack"] = uxTaskGetStackHighWaterMark(task);
-        doc["tasks"][name]["name"] = name;
-        doc["tasks"][name]["priority"] = uxTaskPriorityGet(task);
-    }
-
-    doc["time"] = now();
-
+    getTaskStatusJson(doc);
     getLoraStatusJson(doc);
     getSystemStatusJson(doc);
     getRegistryStatusJson(doc);
-    lastUplinks.getLoraStatusJson(doc);
-    // lastUplinks.print();
 }
 
 void publishStatusMessage()
 {
-    String topic = "ludwig/stats";
+    String topic, message;
     DynamicJsonDocument doc(2048);
-    getStatusJson(doc);
-    String message;
+
+    topic = "ludwig/lora/status";
+    doc.clear();
+    getLoraStatusJson(doc);
+    message.clear();
+    serializeJson(doc, message);
+    mqtt.publish(topic, message);
+
+    topic = "ludwig/task/status";
+    doc.clear();
+    getTaskStatusJson(doc);
+    message.clear();
+    serializeJson(doc, message);
+    mqtt.publish(topic, message);
+
+    topic = "ludwig/system/status";
+    doc.clear();
+    getSystemStatusJson(doc);
+    message.clear();
+    serializeJson(doc, message);
+    mqtt.publish(topic, message);
+
+    topic = "ludwig/registry/status";
+    doc.clear();
+    getRegistryStatusJson(doc);
+    message.clear();
     serializeJson(doc, message);
     mqtt.publish(topic, message);
 }

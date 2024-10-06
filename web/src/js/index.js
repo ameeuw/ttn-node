@@ -105,10 +105,18 @@ Alpine.store("lastUplinks", {
     this.headers = ["fPort", "length", "bytes"];
     if (!data.lora?.uplink?.last) return;
     this.rows = data.lora.uplink.last.map((item) => {
-      return {
-        ...item,
-        bytes: JSON.stringify(decoder.decodeUplink(item).data, null, 2),
-      };
+      try {
+        return {
+          ...item,
+          bytes: JSON.stringify(decoder.decodeUplink(item).data, null, 2),
+        };
+      } catch (error) {
+        console.error(error);
+        return {
+          ...item,
+          bytes: "Error decoding",
+        };
+      }
     });
   },
 });
@@ -253,16 +261,35 @@ const host = development ? "http://192.168.4.1" : "";
 Alpine.store("system", {
   data: {},
   update() {
-    fetch(host + "/status")
+    fetch(host + "/status/lora")
       .then((res) => res.json())
       .then((data) => {
-        this.data = data;
+        Alpine.store("loraCards").update(data);
+      });
+
+    fetch(host + "/status/registry")
+      .then((res) => res.json())
+      .then((data) => {
         Alpine.store("clientRegistry").update(data);
         Alpine.store("tasmotaRegistry").update(data);
+      });
+
+    fetch(host + "/status/task")
+      .then((res) => res.json())
+      .then((data) => {
         Alpine.store("taskRegistry").update(data);
+      });
+
+    fetch(host + "/status/system")
+      .then((res) => res.json())
+      .then((data) => {
         Alpine.store("memoryCards").update(data);
         Alpine.store("featureCards").update(data);
-        Alpine.store("loraCards").update(data);
+      });
+
+    fetch(host + "/lora/lastUplinks")
+      .then((res) => res.json())
+      .then((data) => {
         Alpine.store("lastUplinks").update(data);
       });
   },

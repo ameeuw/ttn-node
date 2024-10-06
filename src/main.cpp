@@ -200,10 +200,45 @@ void setup()
   initFS();
 
   dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
+  server.on("/status/lora", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+              DynamicJsonDocument doc(8192);
+              getLoraStatusJson(doc);
+              String message;
+              serializeJson(doc, message);
+              request->send(200, "text/json", message); });
+  server.on("/status/registry", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+              DynamicJsonDocument doc(1024);
+              getRegistryStatusJson(doc);
+              String message;
+              serializeJson(doc, message);
+              request->send(200, "text/json", message); });
+  server.on("/status/task", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+              DynamicJsonDocument doc(2048);
+              getTaskStatusJson(doc);
+              String message;
+              serializeJson(doc, message);
+              request->send(200, "text/json", message); });
+  server.on("/status/system", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+              DynamicJsonDocument doc(1024);
+              getSystemStatusJson(doc);
+              String message;
+              serializeJson(doc, message);
+              request->send(200, "text/json", message); });
   server.on("/status", HTTP_GET, [](AsyncWebServerRequest *request)
             {
               DynamicJsonDocument doc(8192);
               getStatusJson(doc);
+              String message;
+              serializeJson(doc, message);
+              request->send(200, "text/json", message); });
+  server.on("/lora/lastUplinks", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+              DynamicJsonDocument doc(8192);
+              lastUplinks.getLoraStatusJson(doc);
               String message;
               serializeJson(doc, message);
               request->send(200, "text/json", message); });

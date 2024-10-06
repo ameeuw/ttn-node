@@ -85,5 +85,5 @@ Available nodes post on `tasmota/discovery/<MAC>/config` with payload:
   - [x] LoRa Status: joined, snr, rssi
   - [x] LoRa queue: uplink, downlink, next & last messages
   - [x] Payload parsing from TTN parsers
-  - [ ] Split status json messages to different endpoints (/system, /lora, /registry, /tasks)
+  - [x] Split status json messages to different endpoints (/system, /lora, /registry, /tasks)
 - [x] OTA functionality (https://randomnerdtutorials.com/esp32-ota-over-the-air-vs-code/)
