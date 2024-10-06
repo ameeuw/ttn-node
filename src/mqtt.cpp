@@ -2,13 +2,37 @@
 
 TaskHandle_t MqttTask;
 
-PicoMQTT::Server mqtt;
+::WiFiServer tcpServer(1883);
+::WiFiServer websocketServer(8080);
+PicoWebsocket::Server<::WiFiServer> mqttWebsocket(websocketServer);
+PicoMQTT::Server mqtt(tcpServer, mqttWebsocket);
 
 // Tasmota Node registry
 std::map<String, tasmotaNode> tasmotaRegistry;
 
 CircularBuffer lastUplinks;
 CircularBuffer lastDownlinks;
+
+void handleMqttUplink(const char *topic, const char *payload);
+void discoveryCallback(const char *topic, const char *payload);
+
+void initMqtt()
+{
+    // Subscribe to a topic and attach a callback
+    mqtt.subscribe("stat/+/STATUS8", handleMqttUplink);
+    mqtt.subscribe("tasmota/discovery/+/config", discoveryCallback);
+    mqtt.begin();
+
+    xTaskCreatePinnedToCore(
+        mqttTask,    /* Task function. */
+        "MQTT Task", /* String with name of task. */
+        10000,       /* Stack size in words. */
+        NULL,        /* Parameter passed as input of the task */
+        1,           /* Priority of the task. */
+        &MqttTask,   /* Task handle. */
+        1            /* Pinned CPU core. */
+    );
+}
 
 void handleMqttUplink(const char *topic, const char *payload)
 {
@@ -53,24 +77,6 @@ void discoveryCallback(const char *topic, const char *payload)
         tasmotaNode node = {hostname, ip, topic};
         tasmotaRegistry[mac.c_str()] = node;
     }
-}
-
-void initMqtt()
-{
-    // Subscribe to a topic and attach a callback
-    mqtt.subscribe("stat/+/STATUS8", handleMqttUplink);
-    mqtt.subscribe("tasmota/discovery/+/config", discoveryCallback);
-    mqtt.begin();
-
-    xTaskCreatePinnedToCore(
-        mqttTask,    /* Task function. */
-        "MQTT Task", /* String with name of task. */
-        10000,       /* Stack size in words. */
-        NULL,        /* Parameter passed as input of the task */
-        1,           /* Priority of the task. */
-        &MqttTask,   /* Task handle. */
-        1            /* Pinned CPU core. */
-    );
 }
 
 void mqttTask(void *parameter)
