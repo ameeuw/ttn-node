@@ -9,9 +9,32 @@ import chart01 from "./components/chart-01";
 import chart02 from "./components/chart-02";
 import chart03 from "./components/chart-03";
 import chart04 from "./components/chart-04";
+import mqtt from "mqtt"; // import namespace "mqtt"
 
 Alpine.plugin(persist);
 window.Alpine = Alpine;
+
+if (navigator.userAgent.length < 50) {
+  const client = mqtt.connect("ws://192.168.4.1:8080");
+
+  client.on("connect", () => {
+    client.subscribe("#", (err) => {
+      if (!err) {
+        client.publish("presence", "Hello mqtt");
+      }
+    });
+  });
+
+  client.on("message", (topic, message) => {
+    // message is Buffer
+    console.log(topic);
+    console.log(message.toString());
+  });
+} else {
+  console.log(
+    `Because of the user agent "${navigator.userAgent}" we cannot use the mqtt client`
+  );
+}
 
 function getChipModel(model) {
   switch (model) {
