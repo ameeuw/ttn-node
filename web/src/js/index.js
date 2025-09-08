@@ -14,7 +14,7 @@ import mqtt from "mqtt"; // import namespace "mqtt"
 Alpine.plugin(persist);
 window.Alpine = Alpine;
 
-if (navigator.userAgent.length < 50) {
+if (navigator.userAgent.length < 115) {
   const client = mqtt.connect("ws://192.168.4.1:8080");
 
   client.on("connect", () => {
@@ -29,8 +29,12 @@ if (navigator.userAgent.length < 50) {
     // message is Buffer
     console.log(topic);
     console.log(message.toString());
+    alert(`\n${topic} \n\n ${message.toString()}`);
   });
 } else {
+  alert(
+    `Because of the user agent "${navigator.userAgent}" we cannot use the mqtt client`
+  );
   console.log(
     `Because of the user agent "${navigator.userAgent}" we cannot use the mqtt client`
   );
@@ -339,7 +343,7 @@ Alpine.store("loraCards", {
   },
 });
 
-const development = true;
+const development = false;
 const host = development ? "http://192.168.4.1" : "";
 
 Alpine.store("system", {

@@ -148,7 +148,7 @@ The `platformio.ini` file contains build configurations for different boards:
 - Configurable data rates and power levels
 
 #### MQTT Configuration
-- Local MQTT broker on port 1883
+- Local MQTT broker on port 1883 (and 8080 for websockets)
 - Automatic device discovery
 - Topic structure: `tasmota/discovery/<MAC>/config`
 
