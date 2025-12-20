@@ -184,37 +184,29 @@ void printHeader(void)
 #ifdef USE_DISPLAY
     display.clear();
     display.setCursor(COL_0, HEADER_ROW);
-    display.print(F("LMIC-node"));
+    display.print(F("RadioLib-node"));
 #ifdef ABP_ACTIVATION
     display.drawString(ABPMODE_COL, HEADER_ROW, "ABP");
 #endif
-#ifdef CLASSIC_LMIC
-    display.drawString(CLMICSYMBOL_COL, HEADER_ROW, "*");
-#endif
+// RadioLib symbol
+    display.drawString(CLMICSYMBOL_COL, HEADER_ROW, "R");
     display.drawString(COL_0, DEVICEID_ROW, deviceId);
     display.setCursor(COL_0, INTERVAL_ROW);
 #endif
 
 #ifdef USE_SERIAL
-    serial.println(F("\n\nLMIC-node\n"));
+    serial.println(F("\n\nRadioLib-node\n"));
     serial.print(F("Device-id:     "));
     serial.println(deviceId);
-    serial.print(F("LMIC library:  "));
-#ifdef MCCI_LMIC
-    serial.println(F("MCCI"));
-#else
-    serial.println(F("Classic [Deprecated]"));
-#endif
+    serial.print(F("LoRaWAN library:  "));
+    serial.println(F("RadioLib"));
     serial.print(F("Activation:    "));
 #ifdef OTAA_ACTIVATION
     serial.println(F("OTAA"));
 #else
     serial.println(F("ABP"));
 #endif
-#if defined(LMIC_DEBUG_LEVEL) && LMIC_DEBUG_LEVEL > 0
-    serial.print(F("LMIC debug:    "));
-    serial.println(LMIC_DEBUG_LEVEL);
-#endif
+// RadioLib debug is controlled via RADIOLIB_DEBUG flag
     if (activationMode == ActivationMode::OTAA)
     {
         serial.println();

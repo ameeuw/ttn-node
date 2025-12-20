@@ -36,8 +36,7 @@
 
 #include "TimeLib.h"
 
-#include "lmic.h"
-#include "hal/hal.h"
+#include <RadioLib.h>
 
 #ifdef USE_LED
 #include "EasyLed.h"
@@ -60,11 +59,11 @@
 #include "power.h"
 #include "gps.h"
 #include "utils.h"
-#include "lmic-node.h"
+#include "radiolib-node.h"
 #include "http-helpers.h"
 #include "power.h"
 #include "parsers.h"
-#include "lmic-helpers.h"
+#include "radiolib-helpers.h"
 #include "mqtt.h"
 
 #endif
