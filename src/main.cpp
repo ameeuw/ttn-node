@@ -287,7 +287,7 @@ void setup()
   server.begin();
 
 #ifndef BOARD_DEV
-  initLmic();
+  initRadioLib();
 #endif // BOARD_DEV
   initMqtt();
   initHelperTasks();

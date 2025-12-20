@@ -1,19 +1,9 @@
 #if defined(BOARD_LOPY) || defined(BOARD_DEV)
 #include "bsf_lopy.h"
 
-// Pin mappings for LoRa tranceiver
-const lmic_pinmap lmic_pins = {
-    .nss = 17,
-    .rxtx = LMIC_UNUSED_PIN,
-    .rst = LMIC_UNUSED_PIN,
-    .dio = {/*dio0*/ 23, /*dio1*/ 23, /*dio2*/ 23}
-#ifdef MCCI_LMIC
-    ,
-    .rxtx_rx_active = 0,
-    .rssi_cal = 10,
-    .spi_freq = 8000000 /* 8 MHz */
-#endif
-};
+// RadioLib module instances (LoPy uses SX1272)
+SX1272 radioModule = new Module(17, 23, RADIOLIB_NC, 23);
+LoRaWANNode lorawanNode(&radioModule, &EU868);
 
 #ifdef USE_SERIAL
 HardwareSerial &serial = Serial;
@@ -46,6 +36,10 @@ bool boardInit(InitType initType)
         // These pins will be remembered and will not change if any library
         // later calls SPI.begin() without parameters.
         SPI.begin(5, 19, 27, 18);
+        
+        // Set global RadioLib pointers
+        radio = &radioModule;
+        node = &lorawanNode;
         break;
 
     case InitType::PostInitSerial:

@@ -1,5 +1,5 @@
-#ifndef LMIC_HELPERS_H_
-#define LMIC_HELPERS_H_
+#ifndef RADIOLIB_HELPERS_H_
+#define RADIOLIB_HELPERS_H_
 
 #include "include.h"
 
@@ -21,4 +21,4 @@ void handleDownlinkMsgTask(void *parameter);
 
 extern PicoMQTT::Server mqtt;
 
-#endif // LMIC_HELPERS_H_
+#endif // RADIOLIB_HELPERS_H_

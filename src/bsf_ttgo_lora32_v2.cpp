@@ -2,19 +2,9 @@
 #ifdef BOARD_TTGO
 #include "bsf_ttgo_lora32_v2.h"
 
-// Pin mappings for LoRa tranceiver
-const lmic_pinmap lmic_pins = {
-    .nss = 18,
-    .rxtx = LMIC_UNUSED_PIN,
-    .rst = LMIC_UNUSED_PIN,
-    .dio = {/*dio0*/ 26, /*dio1*/ 33, /*dio2*/ LMIC_UNUSED_PIN}
-#ifdef MCCI_LMIC
-    ,
-    .rxtx_rx_active = 0,
-    .rssi_cal = 10,
-    .spi_freq = 8000000 /* 8 MHz */
-#endif
-};
+// RadioLib module instances
+SX1276 radioModule = new Module(18, 26, RADIOLIB_NC, 33);
+LoRaWANNode lorawanNode(&radioModule, &EU868);
 
 #ifdef USE_SERIAL
 HardwareSerial &serial = Serial;
@@ -42,7 +32,12 @@ bool boardInit(InitType initType)
     {
     case InitType::Hardware:
         // Note: Serial port and display are not yet initialized and cannot be used use here.
-        // No actions required for this board.
+        // Initialize SPI for RadioLib
+        SPI.begin();
+        
+        // Set global RadioLib pointers
+        radio = &radioModule;
+        node = &lorawanNode;
         break;
 
     case InitType::PostInitSerial:
